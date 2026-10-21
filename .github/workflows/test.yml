@@ -63,3 +63,8 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_*.py'
       - name: Run JavaScript VM tests
         run: node --test tests/*.test.cjs
+      - name: Inspect macOS loopback environment on failure
+        if: failure() && runner.os == 'macOS'
+        run: |
+          /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate
+          /usr/libexec/ApplicationFirewall/socketfilterfw --getblockall

@@ -92,19 +92,116 @@ PY
 fi
 
 echo "▶ 启动面板（$MODE）..."
-"$PY" "$BRIDGE" > "$RUN_DIR/bridge-run.log" 2>&1 &
+# 脱离启动终端的输入与挂断信号；日志始终留在此副本的运行目录。
+nohup "$PY" "$BRIDGE" </dev/null > "$RUN_DIR/bridge-run.log" 2>&1 &
 BRIDGE_PID=$!
-"$PY" - "$RUN_DIR/bridge.pid.json" "$BRIDGE_PID" "$BRIDGE" <<'PY'
-import json, os, pathlib, subprocess, sys
-record, pid, script = sys.argv[1:]
-started = subprocess.check_output(['ps', '-p', pid, '-o', 'lstart='], text=True).strip()
-path = pathlib.Path(record)
-path.write_text(json.dumps({'pid': int(pid), 'started': started, 'target': script}), encoding='utf-8')
-os.chmod(path, 0o600)
+if ! "$PY" - "$RUN_DIR/bridge.pid.json" "$BRIDGE_PID" "$BRIDGE" "$PANEL_PORT" "$MODE" <<'PY'
+import json, os, pathlib, signal, subprocess, sys, time, urllib.error, urllib.request
+
+record_file, raw_pid, script, port, mode = sys.argv[1:]
+pid = int(raw_pid)
+target = str(pathlib.Path(script).resolve())
+path = pathlib.Path(record_file)
+record = None
+started = ''
+
+def process_identity():
+    result = subprocess.run(['ps', '-ww', '-p', str(pid), '-o', 'lstart=', '-o', 'command='],
+                            capture_output=True, text=True, timeout=2)
+    value = result.stdout.strip()
+    if result.returncode or not value:
+        return None
+    # lstart 有固定五段，后面保留命令中的空格（兼容 checkout 路径含空格）。
+    pieces = value.split(None, 5)
+    if len(pieces) != 6:
+        return None
+    return (' '.join(pieces[:5]), pieces[5])
+
+def matches_owned(identity):
+    return identity is not None and identity[0] == started and identity[1].endswith(' ' + target)
+
+def remove_own_record():
+    try:
+        if record is not None and json.loads(path.read_text(encoding='utf-8')) == record:
+            path.unlink()
+    except (OSError, ValueError):
+        pass
+
+def cleanup_new_child():
+    """只处理本次启动且启动时间/命令身份仍吻合的子进程。"""
+    try:
+        identity = process_identity()
+        if identity is None:
+            remove_own_record()
+            return
+        if not matches_owned(identity):
+            print('进程身份已变化，未终止未知进程。', file=sys.stderr)
+            return
+        os.kill(pid, signal.SIGTERM)
+        deadline = time.monotonic() + 3
+        while time.monotonic() < deadline:
+            identity = process_identity()
+            if identity is None:
+                remove_own_record()
+                return
+            if not matches_owned(identity):
+                print('进程身份已变化，未继续清理。', file=sys.stderr)
+                return
+            time.sleep(.1)
+        # 只强制回收仍属于本次失败启动的同一进程，不按端口或进程名称清理。
+        if matches_owned(process_identity()):
+            os.kill(pid, signal.SIGKILL)
+            for _ in range(20):
+                if process_identity() is None:
+                    remove_own_record()
+                    return
+                time.sleep(.1)
+    except (OSError, subprocess.SubprocessError) as error:
+        print('本次子进程清理未完成: ' + type(error).__name__, file=sys.stderr)
+
+try:
+    identity = process_identity()
+    if identity is None or not identity[1].endswith(' ' + target):
+        raise RuntimeError('本次面板子进程已退出或命令身份不符')
+    started = identity[0]
+    # stop.sh 用独立 lstart 查询；保存原始空白格式以保持兼容。
+    original_start = subprocess.check_output(['ps', '-p', str(pid), '-o', 'lstart='], text=True, timeout=2).strip()
+    record = {'pid': pid, 'started': original_start, 'target': target}
+    path.write_text(json.dumps(record), encoding='utf-8')
+    os.chmod(path, 0o600)
+    client = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    deadline = time.monotonic() + 15
+    last_problem = '服务尚未响应'
+    while time.monotonic() < deadline:
+        if not matches_owned(process_identity()):
+            raise RuntimeError('本次面板子进程已退出或身份发生变化')
+        try:
+            remaining = deadline - time.monotonic()
+            with client.open(f'http://127.0.0.1:{int(port)}/api/state', timeout=min(1, max(.05, remaining))) as response:
+                if response.status != 200:
+                    raise ValueError('健康响应状态异常')
+                state = json.loads(response.read(2 * 1024 * 1024))
+            if not isinstance(state, dict):
+                raise ValueError('健康响应格式异常')
+            if state.get('pid') != pid:
+                raise ValueError('端口响应不属于本次面板进程')
+            if state.get('preview_mode') is not (mode == 'preview'):
+                raise ValueError('面板模式与请求不一致')
+            if not matches_owned(process_identity()):
+                raise RuntimeError('响应后进程身份已变化')
+            break
+        except (OSError, ValueError, urllib.error.URLError) as error:
+            last_problem = type(error).__name__
+            time.sleep(.15)
+    else:
+        raise RuntimeError('15 秒内面板未能提供健康响应（' + last_problem + '）')
+except (OSError, ValueError, RuntimeError, subprocess.SubprocessError, KeyboardInterrupt) as error:
+    print('面板启动失败: ' + str(error), file=sys.stderr)
+    cleanup_new_child()
+    sys.exit(1)
 PY
-sleep 2
-if ! kill -0 "$BRIDGE_PID" 2>/dev/null; then
-  echo "面板未启动，请查看 $RUN_DIR/bridge-run.log。" >&2
+then
+  echo "面板未就绪，已尝试回收本次启动的子进程；请查看 $RUN_DIR/bridge-run.log。" >&2
   exit 1
 fi
 echo "✓ 面板 http://127.0.0.1:$PANEL_PORT"
