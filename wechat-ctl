@@ -1,0 +1,208 @@
+#!/bin/bash
+set -e -o pipefail
+# 微信桥接远程控制 CLI
+# 供终端 / Hermes（飞书、企微等任意平台）调用
+#
+#   wechat-ctl status              查看状态
+#   wechat-ctl on | off            自动回复总开关
+#   wechat-ctl mute [分钟]         静音（默认 30 分钟）
+#   wechat-ctl unmute              取消静音
+#   wechat-ctl groups on|off       群消息是否自动回复
+#   wechat-ctl send on|off         是否允许发送
+#   wechat-ctl allowlist           查看白名单
+#   wechat-ctl allow <名字/wxid>   加入白名单
+#   wechat-ctl deny  <名字/wxid>   移出白名单
+#   wechat-ctl allow-all           放行所有人（危险）
+#   wechat-ctl deny-all            谁都不回（安全默认）
+#   wechat-ctl contacts            查看联系人表
+#   wechat-ctl logs [条数]         最近日志（默认 15 条）
+#   wechat-ctl send-msg <名字> <内容>  手动发消息
+# 示例：wechat-ctl allow '示例联系人（请替换）'；不会自动添加任何联系人。
+
+API="${WECHAT_API:-http://127.0.0.1:${WECHAT_PANEL_PORT:-8080}}"
+CTL_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+
+j() {
+  local -a pin=()
+  [ -z "${WECHAT_ACCOUNT_TOKEN:-}" ] || pin=(-H "X-Wechat-Account: $WECHAT_ACCOUNT_TOKEN")
+  curl -sS --fail --noproxy '*' --max-time 8 "${pin[@]}" "$@"
+}
+
+need_bridge() {
+  local snapshot
+  if ! snapshot=$(j "$API/api/state" 2>/dev/null); then
+    echo "❌ 桥接服务未运行（$API 无响应）"
+    echo "   启动：$CTL_DIR/start.sh"
+    exit 1
+  fi
+  WECHAT_ACCOUNT_TOKEN=$(printf '%s' "$snapshot" | python3 -c 'import sys,json;print((json.load(sys.stdin).get("account") or {}).get("token", ""))')
+  export WECHAT_ACCOUNT_TOKEN
+}
+
+state() {
+  j "$API/api/state" | python3 -c 'import sys,json,os;d=json.load(sys.stdin);pin=os.environ.get("WECHAT_ACCOUNT_TOKEN", "");actual=(d.get("account") or {}).get("token", "");assert not pin or actual==pin,"微信账号已变化，请重新执行命令";print(json.dumps(d,ensure_ascii=False))'
+}
+
+cmd_status() {
+  need_bridge
+  state | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+print('微信 ⇄ Hermes 桥接状态')
+account = d.get('account') or {}
+if account:
+    print('  当前微信   ' + (account.get('name') or account.get('id') or '未确认'))
+print('─' * 34)
+for s in d['services']:
+    icon = {'online':'✅','waiting':'⏳','unknown':'○','offline':'❌'}.get(s.get('status'), '✅' if s['on'] else '❌')
+    print(f\"  {icon} {s['name']} · {s.get('label','')}\")
+print('─' * 34)
+print(f\"  自动回复   {'开' if d['auto_reply'] else '关'}\")
+print(f\"  群消息回复 {'开' if d['reply_groups'] else '关'}\")
+print(f\"  允许发送   {'开' if d['send_enabled'] else '关'}\")
+print(f\"  自动闭嘴   {'开' if d['auto_skip'] else '关'}（连发上限 {d['max_consec']} 轮）\")
+print(f\"  发送方式   {d['send_mode']}\")
+print(f\"  静音状态   {d['muted_desc']}\")
+print(f\"  白名单     {', '.join(d['allowlist']) if d['allowlist'] else ('⚠️ 放行所有人' if d.get('allow_all') else '（空，谁都不回）')}\")
+hist = d.get('history') or {}
+if hist:
+    print(f\"  对话上下文 {len(hist)} 人: \" + ', '.join(
+        f\"{(d.get('contacts') or {}).get(k, k)} {v}条\" for k, v in hist.items()))
+else:
+    print('  对话上下文 空')
+"
+}
+
+set_key() {
+  local enabled
+  case "$3" in
+    on) enabled=true ;;
+    off) enabled=false ;;
+    *) printf '用法: wechat-ctl groups|send on|off\n' >&2; return 1 ;;
+  esac
+  j -X POST "$API/api/settings" -H 'Content-Type: application/json' \
+    -d "{\"$1\":$enabled}" >/dev/null || return 1
+  printf '✅ %s 已明确设为 %s\n' "$2" "$3"
+}
+
+cmd_allow() {
+  need_bridge
+  local name="$1"
+  [ -z "$name" ] && { echo "用法: wechat-ctl allow <名字或wxid>"; exit 1; }
+  local cur
+  cur=$(state | python3 -c "import sys,json;print('\n'.join(json.load(sys.stdin)['allowlist']))")
+  if echo "$cur" | grep -qxF "$name"; then
+    echo "ℹ️ 「$name」已在白名单里"
+  else
+    local new
+    new=$(printf '%s\n%s' "$cur" "$name")
+    printf '%s' "$new" | python3 -c "
+import sys, json, urllib.request, os
+names = [l.strip() for l in sys.stdin.read().split('\n') if l.strip()]
+req = urllib.request.Request('$API/api/allowlist',
+    data=json.dumps({'allowlist': names}).encode(),
+    headers={'Content-Type': 'application/json','X-Wechat-Account':os.environ.get('WECHAT_ACCOUNT_TOKEN','')})
+urllib.request.urlopen(req, timeout=8)
+"
+    echo "✅ 已加入白名单：$name"
+  fi
+  cmd_allowlist
+}
+
+cmd_deny() {
+  need_bridge
+  local name="$1"
+  [ -z "$name" ] && { echo "用法: wechat-ctl deny <名字或wxid>"; exit 1; }
+  state | python3 -c "
+import sys, json, urllib.request, os
+d = json.load(sys.stdin)
+name = sys.argv[1]
+names = [x for x in d['allowlist'] if x != name]
+req = urllib.request.Request('$API/api/allowlist',
+    data=json.dumps({'allowlist': names}).encode(),
+    headers={'Content-Type': 'application/json','X-Wechat-Account':os.environ.get('WECHAT_ACCOUNT_TOKEN','')})
+urllib.request.urlopen(req, timeout=8)
+print('✅ 已移出白名单：' + name)
+print('   当前白名单：' + (', '.join(names) if names else ('放行所有人' if d.get('allow_all') else '（空，谁都不回）')))
+" "$name"
+}
+
+cmd_allowlist() {
+  need_bridge
+  state | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+a = d['allowlist']
+print('白名单：' + (', '.join(a) if a else ('（放行所有人）' if d.get('allow_all') else '（空，谁都不回）')))
+"
+}
+
+cmd_contacts() {
+  need_bridge
+  state | python3 -c "
+import sys, json
+c = json.load(sys.stdin).get('contacts') or {}
+if not c:
+    print('联系人表为空（收到消息会自动学习）')
+else:
+    print('联系人表（wxid → 显示名字；直发按 ID 投递）：')
+    for k, v in c.items():
+        print(f'  {k}  →  {v}')
+"
+}
+
+cmd_logs() {
+  need_bridge
+  local n="${1:-15}"
+  j "$API/api/logs?limit=$n" | python3 -c "
+import sys, json
+n = int(sys.argv[1])
+logs = list(reversed(json.load(sys.stdin)['items']))
+if not logs:
+    print('（暂无日志）')
+for l in logs:
+    print(f\"  {l['t']} [{l['lvl']}] {l['msg']}\")
+" "$n"
+}
+
+cmd_send_msg() {
+  need_bridge
+  [ -z "$1" ] || [ -z "$2" ] && { echo '用法: wechat-ctl send-msg <名字> <内容>'; exit 1; }
+  j -X POST "$API/api/send" -H "Content-Type: application/json" \
+    -d "$(python3 -c "
+import json,sys
+print(json.dumps(dict(name=sys.argv[1], text=sys.argv[2])))
+" "$1" "$2")" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+print('✅ 已发送（%s）' % d.get('used', '?') if d.get('ok') else '❌ 发送失败：%s' % d.get('error'))
+"
+}
+
+case "$1" in
+  status|st)      cmd_status ;;
+  on)             need_bridge; set_key auto_reply "自动回复" on ;;
+  off)            need_bridge; set_key auto_reply "自动回复" off ;;
+  mute)           need_bridge; j -X POST "$API/api/mute" -H "Content-Type: application/json" \
+                    -d "{\"minutes\":${2:-30}}" >/dev/null; echo "🔇 已静音 ${2:-30} 分钟" ;;
+  unmute)         need_bridge; j -X POST "$API/api/mute" -H "Content-Type: application/json" \
+                    -d '{"minutes":0}' >/dev/null; echo "🔊 已取消静音" ;;
+  groups)         need_bridge; set_key reply_groups "群消息回复" "$2" ;;
+  send)           need_bridge; set_key send_enabled "允许发送" "$2" ;;
+  allow)          cmd_allow "$2" ;;
+  deny)           cmd_deny "$2" ;;
+  allowlist|wl)   cmd_allowlist ;;
+  allow-all)      need_bridge; j -X POST "$API/api/allowlist" -H "Content-Type: application/json" \
+                    -d '{"allowlist":[],"allow_all":true}' >/dev/null
+                  echo "⚠️ 已开启「放行所有人」：任何人都会触发自动回复" ;;
+  deny-all)       need_bridge; j -X POST "$API/api/allowlist" -H "Content-Type: application/json" \
+                    -d '{"allowlist":[],"allow_all":false}' >/dev/null
+                  echo "✅ 已关闭：白名单为空，谁都不会被自动回复" ;;
+  contacts)       cmd_contacts ;;
+  logs|log)       cmd_logs "$2" ;;
+  send-msg)       cmd_send_msg "$2" "$3" ;;
+  *)
+    sed -n '3,20p' "$0" | sed 's/^# \{0,1\}//'
+    ;;
+esac

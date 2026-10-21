@@ -1,0 +1,4090 @@
+<!DOCTYPE html>
+
+<html data-theme="light" lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<meta content="light dark" name="color-scheme"/>
+<title>微信控制台 · LOCAL WORKSPACE</title>
+<style>
+:root{
+  --bg:#f6f7f8; --elev:#ffffff; --elev-2:#f2f3f5; --sidebar:#f1f2f4; --hover:rgba(0,0,0,.038);
+  --border:#e4e6e9; --border-2:#d7dade;
+  --text:#191a1c; --text-2:#5a5f66; --text-3:#8b9199;
+  --accent:#07c160; --accent-2:#04a552; --accent-soft:rgba(7,193,96,.11);
+  --ok:#12a150; --warn:#b47b00; --err:#d63b41; --info:#3b76e0; --violet:#7c6cf0;
+  --chip:rgba(0,0,0,.045);
+  --shadow-1:0 1px 2px rgba(16,20,24,.06), 0 6px 20px -12px rgba(16,20,24,.16);
+  --shadow-2:0 18px 50px -18px rgba(16,20,24,.30);
+  --radius:10px; --radius-sm:7px; --banner-h:0px;
+}
+[data-theme="dark"]{
+  --bg:#08090a; --elev:#0f1113; --elev-2:#141619; --sidebar:#0b0c0e; --hover:rgba(255,255,255,.045);
+  --border:#1c1f22; --border-2:#282c31;
+  --text:#e8eaed; --text-2:#9aa1a9; --text-3:#6a7178;
+  --accent:#07c160; --accent-2:#3ddc84; --accent-soft:rgba(7,193,96,.14);
+  --ok:#22c55e; --warn:#e0a92b; --err:#f0555a; --info:#6b9bff; --violet:#9b8cff;
+  --chip:rgba(255,255,255,.055);
+  --shadow-1:0 1px 2px rgba(0,0,0,.45), 0 8px 26px -14px rgba(0,0,0,.65);
+  --shadow-2:0 20px 56px -20px rgba(0,0,0,.8);
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--bg); color:var(--text); overflow-x:hidden;
+  font:400 14px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Inter,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+}
+h1,h2,h3,p{margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--accent)}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"SF Mono",monospace}
+
+/* ---------- layout ---------- */
+.app{display:grid;grid-template-columns:200px minmax(0,1fr);min-height:100vh}
+.nav{
+  position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:14px;
+  padding:16px 12px;background:var(--sidebar);border-right:1px solid var(--border);
+}
+.brand{display:flex;align-items:center;gap:9px;padding:2px 4px 6px;min-width:0}
+.brand-mark{
+  width:28px;height:28px;flex:none;border-radius:8px;display:grid;place-items:center;
+  background:var(--accent);color:#04170d;box-shadow:0 1px 0 rgba(255,255,255,.25) inset;
+}
+.brand-mark svg{width:16px;height:16px}
+.brand-text{display:flex;flex-direction:column;min-width:0}
+.brand-text b{font-size:13.5px;font-weight:600;letter-spacing:.2px;white-space:nowrap}
+.brand-text i{font-style:normal;font-size:9.5px;letter-spacing:.14em;color:var(--text-3);text-transform:uppercase}
+.nav-list{display:flex;flex-direction:column;gap:2px;flex:1;min-height:0}
+.nav-item{
+  display:flex;align-items:center;gap:9px;width:100%;padding:7px 9px;border:0;border-radius:var(--radius-sm);
+  background:transparent;color:var(--text-2);font-size:13.5px;cursor:pointer;text-align:left;position:relative;
+  transition:background .12s,color .12s;
+}
+.nav-item:hover{background:var(--hover);color:var(--text)}
+.nav-item svg{width:15px;height:15px;flex:none;opacity:.85}
+.nav-item[aria-current="page"]{background:var(--accent-soft);color:var(--text);font-weight:500}
+.nav-item[aria-current="page"]::before{
+  content:"";position:absolute;left:-12px;top:50%;transform:translateY(-50%);
+  width:2px;height:16px;border-radius:0 2px 2px 0;background:var(--accent);
+}
+.nav-item[aria-current="page"] svg{opacity:1;color:var(--accent-2)}
+.nav-count{
+  margin-left:auto;font-size:10.5px;padding:0 6px;border-radius:99px;background:var(--chip);color:var(--text-3);
+  font-variant-numeric:tabular-nums;
+}
+.nav-foot{display:flex;flex-direction:column;gap:9px}
+.seg{display:flex;padding:2px;gap:2px;background:var(--elev-2);border:1px solid var(--border);border-radius:8px}
+.seg button{
+  flex:1;min-width:0;padding:4px 6px;border:0;border-radius:6px;background:transparent;color:var(--text-3);
+  font-size:11.5px;cursor:pointer;white-space:nowrap;transition:.12s;
+}
+.seg button:hover{color:var(--text-2)}
+.seg button[aria-pressed="true"]{background:var(--elev);color:var(--text);box-shadow:var(--shadow-1);font-weight:500}
+.conn{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--text-3);padding:0 2px;min-width:0}
+.conn span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.main{min-width:0;display:flex;flex-direction:column}
+.banner{
+  position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:9px;flex-wrap:wrap;
+  padding:8px 20px;font-size:12.5px;background:rgba(214,59,65,.12);color:var(--err);
+  border-bottom:1px solid rgba(214,59,65,.28);backdrop-filter:blur(8px);
+}
+.banner b{font-weight:600}
+.banner .mono{color:inherit;opacity:.85}
+.topbar{
+  position:sticky;top:var(--banner-h);z-index:30;display:flex;align-items:center;gap:12px;
+  padding:11px 22px;background:color-mix(in srgb,var(--bg) 88%,transparent);
+  border-bottom:1px solid var(--border);backdrop-filter:blur(10px);
+}
+.tb-title{display:flex;align-items:baseline;gap:9px;min-width:0;flex-wrap:wrap}
+.tb-title h1{font-size:15px;font-weight:600;letter-spacing:.2px}
+.tb-title .sub{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-3)}
+.tb-actions{margin-left:auto;display:flex;align-items:center;gap:8px}
+.content{padding:22px 26px 48px;display:flex;flex-direction:column;gap:14px;max-width:1320px;width:100%}
+.page{display:flex;flex-direction:column;gap:14px}
+.page[hidden]{display:none}
+.cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:stretch}
+
+/* ---------- cards ---------- */
+.card{display:flex;flex-direction:column;background:var(--elev);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;min-width:0}
+.card-h{min-height:28px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:11px}
+.card-h h2{font-size:13px;font-weight:600;letter-spacing:0;color:var(--text)}
+.card-h .hint{margin-left:auto;font-size:11.5px;color:var(--text-3);text-align:right}
+.card-h .hint.warn{color:var(--warn)}
+.card-h .hint.err{color:var(--err)}
+.note{font-size:11.8px;color:var(--text-3);line-height:1.55}
+.note b{color:var(--text-2);font-weight:600}
+.empty{font-size:12.5px;color:var(--text-3);padding:10px 2px}
+
+/* ---------- dots & pills ---------- */
+.dot{width:8px;height:8px;border-radius:50%;flex:none;background:var(--text-3);box-sizing:border-box}
+.dot.online{background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 20%,transparent)}
+.dot.offline{background:var(--err);box-shadow:0 0 0 3px color-mix(in srgb,var(--err) 18%,transparent)}
+.dot.waiting{background:var(--warn);box-shadow:0 0 0 3px color-mix(in srgb,var(--warn) 20%,transparent)}
+.dot.unknown{background:transparent;border:1px dashed var(--text-3)}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;padding:3px 9px;border-radius:99px;
+  background:var(--elev-2);border:1px solid var(--border);color:var(--text-2);white-space:nowrap}
+.pill.ok{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 35%,var(--border))}
+.pill.warn{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 35%,var(--border))}
+.pill.err{color:var(--err);border-color:color-mix(in srgb,var(--err) 35%,var(--border))}
+.chip{display:inline-block;font-size:10.5px;line-height:1.5;padding:1px 6px;border-radius:5px;
+  background:var(--chip);color:var(--text-2);white-space:nowrap}
+.chip.k-received{background:color-mix(in srgb,var(--info) 15%,transparent);color:var(--info)}
+.chip.k-reply{background:color-mix(in srgb,var(--violet) 16%,transparent);color:var(--violet)}
+.chip.k-sent{background:color-mix(in srgb,var(--ok) 15%,transparent);color:var(--ok)}
+.chip.k-skip{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
+.chip.k-error{background:color-mix(in srgb,var(--err) 14%,transparent);color:var(--err)}
+.chip.k-muted{background:var(--chip);color:var(--text-3)}
+.tag{font-size:10px;padding:0 5px;border-radius:4px;background:var(--chip);color:var(--text-3);white-space:nowrap}
+.tag.warn{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
+
+/* ---------- buttons ---------- */
+.btn{
+  display:inline-flex;align-items:center;gap:6px;min-height:34px;justify-content:center;padding:6px 12px;border-radius:var(--radius-sm);
+  border:1px solid var(--border-2);background:var(--elev-2);color:var(--text-2);font-size:12.5px;
+  cursor:pointer;transition:.12s;white-space:nowrap;
+}
+.btn:hover:not(:disabled){background:var(--hover);color:var(--text)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn svg{width:13px;height:13px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#04170d;font-weight:600}
+.btn.primary:hover:not(:disabled){background:var(--accent-2);border-color:var(--accent-2);color:#04170d}
+.btn.danger{color:var(--err);border-color:color-mix(in srgb,var(--err) 40%,var(--border))}
+.btn.danger:hover:not(:disabled){background:color-mix(in srgb,var(--err) 12%,transparent);color:var(--err)}
+.btn.icon{padding:5px 7px}
+.btn.sm{min-height:28px;padding:3px 9px;font-size:11.5px;border-radius:6px}
+.btn[aria-pressed="true"]{background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 45%,var(--border));color:var(--text)}
+.btn.block{width:100%;justify-content:center}
+.btn.busy{position:relative;color:transparent!important}
+.btn.busy::after{
+  content:"";position:absolute;inset:0;margin:auto;width:11px;height:11px;border-radius:50%;
+  border:1.6px solid currentColor;border-top-color:transparent;color:var(--text-2);
+  animation:spin .7s linear infinite;
+}
+.btn.primary.busy::after{border-color:#04170d;border-top-color:transparent}
+@keyframes spin{to{transform:rotate(360deg)}}
+.row-btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+/* ---------- inputs ---------- */
+input[type=text],input[type=number],input[type=search],select,textarea{
+  width:100%;min-height:36px;padding:7px 10px;border:1px solid var(--border-2);border-radius:var(--radius-sm);
+  background:var(--bg);color:var(--text);font-size:12.8px;outline:none;transition:border-color .12s,box-shadow .12s;
+}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+input::placeholder,textarea::placeholder{color:var(--text-3)}
+textarea{resize:vertical;line-height:1.6}
+select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--text-3) 50%),linear-gradient(135deg,var(--text-3) 50%,transparent 50%);
+  background-position:calc(100% - 14px) 52%,calc(100% - 9px) 52%;background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:26px}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field label{font-size:12px;color:var(--text-2)}
+.search{position:relative;min-width:0}
+.search svg{position:absolute;left:8px;top:50%;transform:translateY(-50%);width:13px;height:13px;color:var(--text-3);pointer-events:none}
+.search input{padding-left:27px}
+.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.toolbar .search{flex:1 1 220px;min-width:160px}
+.toolbar select{width:auto;min-width:112px}
+.toolbar .spacer{flex:1 1 auto}
+
+/* ---------- switches ---------- */
+.sw-row{display:flex;align-items:center;gap:12px;min-height:45px;padding:10px 0;border-top:1px solid var(--border)}
+.sw-row:first-of-type{border-top:0}
+.sw-text{min-width:0;display:flex;flex-direction:column;gap:2px}
+.sw-text b{font-size:13.2px;font-weight:550}
+.sw-text span{font-size:11.6px;color:var(--text-3);line-height:1.5}
+.sw{
+  margin-left:auto;flex:none;width:38px;height:22px;border-radius:99px;border:1px solid var(--border-2);
+  background:var(--elev-2);position:relative;cursor:pointer;transition:background .15s,border-color .15s;padding:0;
+}
+.sw .sw-knob{position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;
+  box-shadow:0 1px 2px rgba(0,0,0,.28);transition:left .15s}
+.sw[aria-checked="true"]{background:var(--accent);border-color:var(--accent)}
+.sw[aria-checked="true"] .sw-knob{left:18px}
+.sw:disabled{opacity:.5;cursor:not-allowed}
+.sw.danger[aria-checked="true"]{background:var(--err);border-color:var(--err)}
+
+/* ---------- services ---------- */
+.svc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:9px}
+@media (min-width:660px){.svc-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.svc{border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 11px;background:var(--elev-2);min-width:0}
+.svc-top{display:flex;align-items:center;gap:7px;min-width:0}
+.svc-top b{font-size:12.6px;font-weight:550;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.svc-st{font-size:11.5px;margin-top:5px;color:var(--text-2);display:flex;align-items:center;gap:6px}
+.svc-st .mono{color:var(--text-3)}
+.svc-detail{font-size:11px;color:var(--text-3);margin-top:3px;line-height:1.5;overflow-wrap:anywhere}
+.chain{display:flex;flex-wrap:wrap;align-items:center;gap:6px 4px;margin-top:11px;padding-top:11px;border-top:1px solid var(--border);
+  font-size:11.5px;color:var(--text-2)}
+.chain .node{display:inline-flex;align-items:center;gap:5px;padding:2px 7px;border-radius:6px;background:var(--elev-2);border:1px solid var(--border)}
+.chain .node .dot{width:6px;height:6px}
+.chain .arw{color:var(--text-3)}
+
+/* ---------- stats ---------- */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(146px,1fr));gap:9px}
+.stat{border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 11px;background:var(--elev-2);min-width:0}
+.stat-k{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--text-3)}
+.stat-v{font-size:21px;font-weight:600;line-height:1.28;margin-top:2px;letter-spacing:-.2px}
+.stat-v.warn{color:var(--warn)}
+.stat-v.err{color:var(--err)}
+.stat-s{font-size:11px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:5px 14px;font-size:12.3px}
+.kv dt{color:var(--text-3);white-space:nowrap}
+.kv dd{margin:0;text-align:right;overflow-wrap:anywhere}
+
+/* ---------- activity ---------- */
+.act{display:flex;flex-direction:column;gap:0;max-height:334px;overflow-y:auto;margin:-3px 0}
+.act-row{display:flex;gap:9px;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--border);min-width:0}
+.act-row:last-child{border-bottom:0}
+.act-time{font-size:11px;color:var(--text-3);flex:none}
+.act-msg{font-size:12.2px;min-width:0;overflow-wrap:anywhere;color:var(--text-2)}
+.act-row[data-kind="error"] .act-msg{color:var(--err)}
+.act-row[data-kind="sent"] .act-msg{color:var(--ok)}
+
+/* ---------- logs ---------- */
+.log-wrap{border:1px solid var(--border);border-radius:var(--radius);background:var(--elev);overflow:hidden}
+.log-head{display:flex;align-items:center;gap:8px;padding:9px 14px;border-bottom:1px solid var(--border);background:var(--elev-2)}
+.log-head h2{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);font-weight:600}
+.log-head .hint{margin-left:auto;font-size:11.5px;color:var(--text-3)}
+.log-list{max-height:min(66vh,660px);overflow-y:auto}
+.log-row{
+  display:flex;gap:10px;align-items:baseline;padding:7px 14px;border-bottom:1px solid var(--border);
+  cursor:pointer;border-left:2px solid transparent;min-width:0;
+}
+.log-row:last-child{border-bottom:0}
+.log-row:hover{background:var(--hover)}
+.log-row:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.log-row[data-kind="error"]{border-left-color:var(--err)}
+.log-row[data-kind="sent"]{border-left-color:var(--ok)}
+.log-row[data-kind="received"]{border-left-color:var(--info)}
+.log-row[data-kind="skip"]{border-left-color:var(--warn)}
+.log-time{flex:none;display:flex;flex-direction:column;width:62px}
+.log-time b{font-size:11.5px;font-weight:500;color:var(--text-2);font-family:ui-monospace,Menlo,monospace}
+.log-time i{font-style:normal;font-size:10px;color:var(--text-3);font-family:ui-monospace,Menlo,monospace}
+.log-row .chip{flex:none;width:40px;text-align:center}
+.log-msg{flex:1 1 auto;min-width:0;font-size:12.4px;overflow-wrap:anywhere;color:var(--text-2);
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.log-row[data-kind="error"] .log-msg{color:var(--err)}
+.log-who{flex:0 1 34%;min-width:0;margin-left:auto;text-align:right;display:flex;flex-direction:column;gap:1px}
+.log-who b{font-size:11.8px;font-weight:550;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.log-who i{font-style:normal;font-size:10.2px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.log-foot{display:flex;align-items:center;gap:10px;padding:9px 14px;border-top:1px solid var(--border);background:var(--elev-2);flex-wrap:wrap}
+.log-foot .hint{font-size:11.5px;color:var(--text-3);margin-right:auto}
+
+/* ---------- lists (allowlist / contacts / context) ---------- */
+.list{display:flex;flex-direction:column;gap:0;max-height:392px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius-sm)}
+.list-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);min-width:0}
+.list-row:last-child{border-bottom:0}
+.list-row:hover{background:var(--hover)}
+.list-main{min-width:0;display:flex;flex-direction:column;gap:1px;flex:1 1 auto}
+.list-main b{font-size:12.6px;font-weight:550;overflow-wrap:anywhere}
+.contact-title{display:flex;align-items:center;gap:5px;min-width:0;white-space:nowrap;overflow:hidden}
+.contact-label{flex:0 1 auto;min-width:0;max-width:60%;overflow:hidden;text-overflow:ellipsis}
+.contact-title .tag{flex:none}
+.contact-group-preview{flex:1 1 0;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px;font-weight:400;color:var(--text-2);cursor:help}
+.list-main i{font-style:normal;font-size:10.8px;color:var(--text-3);font-family:ui-monospace,Menlo,monospace;overflow-wrap:anywhere}
+.list-acts{display:flex;gap:5px;flex:none}
+.list.sm{max-height:300px}
+.dirty-bar{
+  position:sticky;bottom:0;z-index:20;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:10px 13px;border-radius:var(--radius);background:var(--elev);
+  border:1px solid color-mix(in srgb,var(--warn) 45%,var(--border));box-shadow:var(--shadow-2);
+}
+.dirty-bar .txt{font-size:12.4px;color:var(--warn);margin-right:auto}
+.quick{display:flex;gap:7px;flex-wrap:wrap;align-items:flex-end}
+.quick .field{flex:1 1 130px;min-width:110px}
+.quick .field.wide{flex:1 1 240px}
+.details{border-top:1px solid var(--border);margin-top:4px}
+details{padding:0}
+summary{
+  list-style:none;cursor:pointer;padding:10px 0 2px;font-size:12.6px;color:var(--text-2);display:flex;align-items:center;gap:7px;
+}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"";width:0;height:0;border:4px solid transparent;border-left-color:var(--text-3);margin-left:2px;transition:transform .15s}
+details[open] summary::before{transform:rotate(90deg) translateX(1px)}
+summary:hover{color:var(--text)}
+.details-body{padding:11px 0 3px;display:flex;flex-direction:column;gap:10px}
+.confirm-box{
+  border:1px solid color-mix(in srgb,var(--warn) 45%,var(--border));border-radius:var(--radius-sm);
+  background:color-mix(in srgb,var(--warn) 8%,transparent);padding:10px 11px;display:flex;flex-direction:column;gap:8px;
+}
+.confirm-box .cb-t{font-size:12.3px;color:var(--warn);font-weight:550}
+.confirm-box pre{
+  margin:0;font-size:12.2px;white-space:pre-wrap;overflow-wrap:anywhere;max-height:170px;overflow-y:auto;
+  background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px;
+  font-family:ui-monospace,Menlo,monospace;color:var(--text);
+}
+
+/* ---------- modal ---------- */
+.modal-bd{
+  position:fixed;inset:0;z-index:90;background:rgba(6,8,10,.55);backdrop-filter:blur(3px);
+  display:flex;align-items:center;justify-content:center;padding:18px;
+}
+.modal-bd[hidden]{display:none}
+.modal{
+  width:100%;max-width:600px;max-height:84vh;display:flex;flex-direction:column;background:var(--elev);
+  border:1px solid var(--border-2);border-radius:12px;box-shadow:var(--shadow-2);overflow:hidden;
+}
+.modal-h{display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--border)}
+.modal-h h3{font-size:13.6px;font-weight:600;min-width:0;overflow-wrap:anywhere}
+.modal-h .btn.icon{margin-left:auto}
+.modal-b{padding:14px 16px;overflow-y:auto;display:flex;flex-direction:column;gap:11px}
+.modal-f{display:flex;gap:8px;justify-content:flex-end;padding:12px 16px;border-top:1px solid var(--border);background:var(--elev-2);flex-wrap:wrap}
+.modal .kv dt{font-size:12px}
+.modal .kv dd{font-size:12.4px}
+.body-box{
+  margin:0;font-size:12.6px;white-space:pre-wrap;overflow-wrap:anywhere;max-height:44vh;overflow-y:auto;
+  background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;color:var(--text);
+}
+
+/* ---------- toasts ---------- */
+.toasts{position:fixed;right:16px;bottom:16px;z-index:120;display:flex;flex-direction:column;gap:8px;max-width:min(360px,calc(100vw - 32px))}
+.toast{
+  display:flex;gap:8px;align-items:flex-start;padding:9px 12px;border-radius:var(--radius-sm);
+  background:var(--elev);border:1px solid var(--border-2);box-shadow:var(--shadow-2);
+  font-size:12.5px;color:var(--text-2);animation:tin .16s ease-out;border-left:2px solid var(--text-3);
+}
+.toast.ok{border-left-color:var(--ok)}
+.toast.err{border-left-color:var(--err)}
+.toast.info{border-left-color:var(--info)}
+.toast b{color:var(--text);font-weight:600}
+.toast span{overflow-wrap:anywhere}
+@keyframes tin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.toast.out{opacity:0;transform:translateY(4px);transition:.18s}
+
+/* ---------- AI 会话 ---------- */
+.ai-pane{display:flex;flex-direction:column;gap:14px}
+.ai-pane[hidden]{display:none}
+.note.err{color:var(--err)}
+.thumbs{display:flex;flex-wrap:wrap;gap:8px;margin-top:9px}
+.thumb{position:relative;width:88px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--elev-2);padding:5px;min-width:0}
+.thumb img{display:block;width:100%;height:62px;object-fit:cover;border-radius:5px;background:var(--bg)}
+.thumb .thumb-x{
+  position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;padding:0;line-height:1;
+  border:1px solid var(--border-2);background:var(--elev);color:var(--text-2);font-size:11px;cursor:pointer;
+}
+.thumb .thumb-x:hover{color:var(--err);border-color:color-mix(in srgb,var(--err) 45%,var(--border))}
+.thumb .thumb-n{display:block;font-size:9.6px;color:var(--text-3);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.msg-row{display:flex;gap:8px;align-items:baseline;padding:6px 10px;border-bottom:1px solid var(--border);min-width:0}
+.msg-row:last-child{border-bottom:0}
+.msg-row .msg-t{flex:none;width:66px;font-size:10.4px;color:var(--text-3)}
+.msg-row .chip{flex:none}
+.msg-row .msg-text{flex:1 1 auto;min-width:0;font-size:12.4px;color:var(--text-2);overflow-wrap:anywhere;white-space:pre-wrap}
+.msg-row[data-role="assistant"] .msg-text{color:var(--text)}
+.ai-sub{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);margin:10px 0 0;padding-top:9px;border-top:1px solid var(--border)}
+.insight{display:flex;gap:8px;align-items:flex-start;padding:7px 0;border-top:1px solid var(--border)}
+.insight .ins-main{min-width:0;flex:1 1 auto;display:flex;flex-direction:column;gap:2px}
+.insight .ins-main b{font-size:12.4px;font-weight:550;overflow-wrap:anywhere}
+.insight .ins-main span{font-size:11.4px;color:var(--text-3);overflow-wrap:anywhere}
+.insight .ins-main span.err{color:var(--err)}
+
+/* ---------- responsive ---------- */
+@media (max-width:1000px){
+  .cols{grid-template-columns:1fr}
+}
+@media (max-width:880px){
+  .app{grid-template-columns:1fr}
+  .nav{position:static;height:auto;border-right:0;border-bottom:1px solid var(--border);padding:11px 13px;gap:10px}
+  .nav-list{flex-direction:row;flex-wrap:wrap;gap:5px}
+  .nav-item{width:auto;flex:0 1 auto;font-size:12.8px;padding:6px 10px}
+  .nav-item[aria-current="page"]::before{display:none}
+  .nav-count{margin-left:0}
+  .nav-foot{flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px}
+  .nav-foot .seg{flex:1 1 200px}
+  .conn{flex:0 1 auto}
+  .topbar{padding:10px 13px}
+  .content{padding:13px 13px 56px}
+  .log-list{max-height:none}
+}
+@media (max-width:680px){
+  .log-row{flex-wrap:wrap;gap:6px 8px}
+  .log-msg{flex:1 1 100%;order:3;-webkit-line-clamp:3}
+  .log-who{flex:1 1 100%;order:4;text-align:left;margin-left:0;flex-direction:row;gap:7px;align-items:baseline}
+  .log-who i{overflow-wrap:anywhere;white-space:normal}
+  .stat-grid{grid-template-columns:repeat(auto-fit,minmax(132px,1fr))}
+  .toasts{left:12px;right:12px;bottom:12px;max-width:none}
+  .modal-bd{padding:10px;align-items:flex-end}
+  .modal{max-height:92vh}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.001s!important;transition-duration:.001s!important}
+}
+
+/* Compact workspace: progressive disclosure, aligned panels, short labels. */
+.policy-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:stretch}
+.contact-grid{grid-template-columns:minmax(0,.9fr) minmax(0,1.3fr)}
+.contact-grid>.card{min-height:470px}
+.contact-grid .list{flex:1;max-height:440px;min-height:260px}
+.contact-grid .card-h .note{font-size:11px;margin:0;color:var(--text-3)}
+.adder{margin-bottom:12px}
+.disclosure{border-top:1px solid var(--border);margin-top:12px;padding-top:3px}
+.disclosure summary{min-height:32px;padding:6px 0;font-size:12px}
+.disclosure>.quick{padding:10px 0}
+.inline-more{flex:0 0 auto;border:0;margin:0;padding:0}
+.inline-more>summary{min-height:36px;padding:6px 8px}
+.inline-more[open]{flex-basis:100%}
+.tool-card{display:block;padding-top:8px;padding-bottom:8px}
+.tool-card>summary{min-height:36px;padding:7px 0;font-size:13px}
+.tool-card>summary b{font-weight:550}
+.tool-card>summary>.hint{margin-left:auto;font-size:11px;font-weight:400;color:var(--text-3)}
+.tool-card>.details-body{border-top:1px solid var(--border);margin-top:8px;padding-top:16px}
+.card-actions{justify-content:flex-end;margin-top:16px!important;padding-top:14px;border-top:1px solid var(--border)}
+.mute-inline{margin-top:auto;padding-top:14px;border-top:1px solid var(--border)}
+.mute-inline .row-btns{margin-top:8px!important;gap:6px}
+.mute-inline .hint{font-size:11px;color:var(--text-3)}
+#affixSample{padding:8px 10px;min-height:36px;font-size:12px;background:var(--elev-2)}
+.ai-bar{display:flex;flex-direction:column;gap:10px;padding:0 0 2px}
+.ai-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:10px}
+#aiTabs{flex:1;max-width:560px;min-width:280px;padding:4px}
+#aiTabs button{min-height:32px;font-size:12px}
+#aiLoadHint{margin-left:auto;font-size:11px;color:var(--text-3)}
+#aiDrillBackWrap{margin-top:0!important;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--elev)}
+#aiDrillNote{font-size:11.5px}
+.ai-editor-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:24px}
+.ai-editor-grid>.field textarea{flex:1;min-height:200px}
+.capabilities .sw-row:first-child{border-top:0}
+.profile-editors{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.profile-editors textarea{min-height:154px;height:154px}
+#aiProfileMeta{font-size:11px;color:var(--text-3);margin:0 0 12px!important}
+#aiProfileSummary{font-size:11px}
+#aiPaneDebug>.cols>.card{min-height:360px}
+#aiGenReply{flex:1;min-height:180px;margin-top:12px}
+#aiPaneDebug .row-btns:last-of-type{margin-top:auto!important;padding-top:14px}
+#muteRow{margin-top:auto!important;padding-top:14px}
+#page-overview .cols{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr)}
+.svc{display:flex;flex-direction:column;min-height:83px}
+.svc-more{margin-top:4px;font-size:11px;color:var(--text-3)}
+.svc-more summary{padding:2px 0;font-size:11px}
+#aiCtxBox summary{font-size:12px}
+@media(max-width:1000px){.policy-grid,.contact-grid,#page-overview .cols{grid-template-columns:1fr}.contact-grid>.card{min-height:0}.contact-grid .list{min-height:120px}}
+@media(max-width:680px){.ai-editor-grid,.profile-editors{grid-template-columns:1fr}.content{padding:16px 14px 36px}.card{padding:15px}.tool-card{padding-top:8px;padding-bottom:8px}.ai-toolbar{gap:8px}#aiTabs{min-width:100%;max-width:none}#aiLoadHint{margin-left:0}#aiDrillNote{overflow-wrap:anywhere}.card-actions{justify-content:flex-start}.list-acts{flex-wrap:wrap;max-width:140px}.btn{min-height:36px}}
+
+.al-status{white-space:nowrap;font-size:10.5px!important;margin-left:0!important}#page-allow .card-h{flex-wrap:nowrap}#page-allow .card-h h2{white-space:nowrap}#page-allow .card-h .hint{white-space:nowrap}
+
+/* ---------- 账号作用域 ---------- */
+.acct{min-width:0}
+.acct b{font-weight:600;color:var(--text-2)}
+.acct-bar{
+  display:flex;align-items:center;gap:8px;padding:7px 22px;font-size:12.5px;
+  background:color-mix(in srgb,var(--warn) 12%,var(--bg));color:var(--warn);
+  border-bottom:1px solid color-mix(in srgb,var(--warn) 30%,var(--border));
+}
+.acct-bar b{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width:880px){.acct-bar{padding:7px 13px}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="nav">
+<div class="brand">
+<span aria-hidden="true" class="brand-mark" id="brandMark"></span>
+<span class="brand-text"><b>微信控制台</b><i>Local Workspace</i></span>
+</div>
+<nav aria-label="主导航" class="nav-list" id="navList"></nav>
+<div class="nav-foot">
+<div aria-label="主题" class="seg" id="themeSeg" role="group">
+<button data-theme-pref="system" type="button">系统</button>
+<button data-theme-pref="light" type="button">浅色</button>
+<button data-theme-pref="dark" type="button">深色</button>
+</div>
+<div class="conn acct" id="acctRow" title="当前登录的微信账号（由本地桥接服务识别）">
+<span class="dot unknown" id="acctDot"></span>
+<span id="acctText">账号未识别</span>
+</div>
+<div class="conn" title="与本地桥接服务的连接状态">
+<span class="dot unknown" id="connDot"></span>
+<span id="connText">连接中…</span>
+</div>
+</div>
+</aside>
+<main class="main">
+<div class="banner" hidden="" id="banner">
+<b>桥接服务连接中断</b>
+<span>界面数据为最后一次成功的快照，可能已过期。</span>
+<span class="mono" id="bannerTime"></span>
+<button class="btn sm" id="bannerRetry" type="button">立即重试</button>
+</div>
+<header class="topbar">
+<div class="tb-title">
+<h1 id="pageTitle">运行总览</h1>
+<p class="sub" id="pageSub">Overview</p>
+</div>
+<div class="tb-actions">
+<span class="pill" id="pollPill">实时 · 3s</span>
+<button aria-label="立即刷新" class="btn icon" id="refreshBtn" title="立即刷新" type="button"></button>
+</div>
+</header>
+<div class="acct-bar" hidden="" id="acctBar"><span class="dot waiting"></span><b id="acctBarText"></b></div>
+<div class="content">
+<!-- ============ 运行总览 ============ -->
+<section class="page" id="page-overview">
+<div class="cols">
+<div class="card">
+<div class="card-h">
+<h2>服务链路</h2>
+<span class="hint" id="svcHint">等待数据…</span>
+</div>
+<div class="svc-grid" id="svcGrid"></div>
+<div class="chain" id="chainLine"></div>
+</div>
+<div class="card">
+<div class="card-h">
+<h2>运行信息</h2>
+<span class="hint" id="rtHint"></span>
+</div>
+<dl class="kv" id="rtKv"></dl>
+<div class="row-btns" id="muteRow" style="margin-top:11px"></div>
+</div>
+</div>
+<div class="stat-grid" id="statGrid"></div>
+<div class="card">
+<div class="card-h">
+<h2>最近活动</h2>
+<span class="hint" id="recentMeta"></span>
+<button class="btn sm" data-goto="logs" type="button">查看全部日志</button>
+</div>
+<div class="act" id="recentList"></div>
+</div>
+</section>
+<!-- ============ 消息日志 ============ -->
+<section class="page" hidden="" id="page-logs">
+<div class="card">
+<div class="toolbar">
+<div class="search">
+<span aria-hidden="true" id="lgSearchIcon"></span>
+<input autocomplete="off" id="lgQ" placeholder="搜索消息内容 / 昵称 / wxid" spellcheck="false" type="search"/>
+</div>
+<select aria-label="消息类型" id="lgKind">
+<option value="all">全部类型</option>
+<option value="received">接收</option>
+<option value="reply">回复</option>
+<option value="sent">发送</option>
+<option value="skip">跳过</option>
+<option value="muted">静音</option>
+<option value="error">错误</option>
+<option value="info">信息</option>
+</select>
+<div aria-label="会话范围" class="seg" id="lgScope" role="group">
+<button data-scope="all" type="button">全部</button>
+<button data-scope="private" type="button">私聊</button>
+<button data-scope="group" type="button">群聊</button>
+</div>
+<span class="spacer"></span>
+<button aria-pressed="false" class="btn" id="lgPause" type="button">暂停实时</button>
+<button class="btn" id="lgReset" type="button">重置筛选</button>
+<button class="btn" id="lgExport" type="button">导出 JSON</button>
+</div>
+<p class="note" id="lgNote" style="margin-top:9px"></p>
+</div>
+<div class="log-wrap">
+<div class="log-head">
+<h2>日志流</h2>
+<span class="hint" id="logHeadHint"></span>
+</div>
+<div class="log-list" id="logList" role="list"></div>
+<div class="log-foot">
+<span class="hint" id="logMeta"></span>
+<button class="btn" id="logMore" type="button">加载更多</button>
+</div>
+</div>
+</section>
+<!-- ============ 白名单与联系人 ============ -->
+<section class="page" hidden="" id="page-allow">
+<div class="cols contact-grid">
+<div class="card">
+<div class="card-h">
+<h2>白名单</h2>
+<span class="hint" id="alHint"></span>
+<button class="btn sm" data-goto="reply" type="button">放行策略</button>
+<span class="note al-status" id="alSemantics"></span></div>
+<details class="disclosure adder"><summary>添加白名单</summary><div class="details-body"><div class="quick" style="margin:10px 0">
+<div class="field wide">
+<label for="alNew">添加到白名单</label>
+<input autocomplete="off" id="alNew" placeholder="微信 ID 或昵称" spellcheck="false" type="text"/>
+</div>
+<button class="btn primary" id="alAdd" type="button">加入白名单</button>
+<button class="btn" id="alBulkToggle" type="button">批量编辑</button>
+</div></div></details>
+<div hidden="" id="alBulkWrap" style="margin-bottom:10px">
+<textarea id="alBulk" placeholder="每行一条，保存前会去空行与重复项" rows="5" spellcheck="false"></textarea>
+<div class="row-btns" style="margin-top:7px">
+<button class="btn primary sm" id="alBulkApply" type="button">应用到列表</button>
+<button class="btn sm" id="alBulkFill" type="button">从当前列表填充</button>
+<button class="btn sm" id="alBulkCancel" type="button">取消</button>
+</div>
+</div>
+<div class="search" style="margin-bottom:9px">
+<span aria-hidden="true" id="alSearchIcon"></span>
+<input autocomplete="off" id="alSearch" placeholder="筛选白名单条目" spellcheck="false" type="search"/>
+</div>
+<div class="list" id="alList"></div>
+</div>
+<div class="card">
+<div class="card-h">
+<h2>联系人表</h2>
+<span class="hint" id="ctHint"></span>
+</div>
+<details class="disclosure adder"><summary>添加联系人</summary><div class="details-body"><div class="quick" style="margin:10px 0">
+<div class="field">
+<label for="ctNewUid">wxid / 群号</label>
+<input autocomplete="off" id="ctNewUid" placeholder="wxid_xxx 或 xxx@chatroom" spellcheck="false" type="text"/>
+</div>
+<div class="field">
+<label for="ctNewName">昵称</label>
+<input autocomplete="off" id="ctNewName" placeholder="显示名" spellcheck="false" type="text"/>
+</div>
+<button class="btn primary" id="ctAdd" type="button">新增</button>
+</div></div></details>
+<div class="search" style="margin-bottom:9px">
+<span aria-hidden="true" id="ctSearchIcon"></span>
+<input autocomplete="off" id="ctSearch" placeholder="按 wxid 或昵称搜索" spellcheck="false" type="search"/>
+</div>
+<div class="list" id="ctList"></div>
+</div>
+</div>
+<div aria-live="polite" class="dirty-bar" hidden="" id="dirtyBar" role="status">
+<span class="txt" id="dirtyText"></span>
+<button class="btn" id="dirtyRevert" type="button">放弃修改</button>
+<button class="btn primary" id="dirtySave" type="button">保存全部</button>
+</div>
+</section>
+<!-- ============ 回复策略 ============ -->
+<section class="page" hidden="" id="page-reply"><div class="policy-grid"><div class="card">
+<div class="card-h"><h2>触发与放行</h2><span class="hint" id="trigHint"></span></div>
+<div class="sw-row">
+<div class="sw-text"><b>自动回复</b></div>
+<button aria-checked="false" aria-label="自动回复" class="sw" data-switch="auto_reply" role="switch" type="button"><span class="sw-knob"></span></button>
+</div>
+<div class="sw-row">
+<div class="sw-text"><b>回复群消息</b></div>
+<button aria-checked="false" aria-label="群消息也自动回复" class="sw" data-switch="reply_groups" role="switch" type="button"><span class="sw-knob"></span></button>
+</div>
+<div class="sw-row">
+<div class="sw-text"><b>放行所有人</b></div>
+<button aria-checked="false" aria-label="放行所有人" class="sw danger" data-switch="allow_all" role="switch" type="button"><span class="sw-knob"></span></button>
+</div>
+<p class="note" id="allowAllNote" style="margin-top:10px"></p>
+</div><div class="card">
+<div class="card-h"><h2>发送通道</h2><span class="hint" id="sendHint"></span></div>
+<div class="sw-row">
+<div class="sw-text"><b>启用发送</b></div>
+<button aria-checked="false" aria-label="启用发送" class="sw" data-switch="send_enabled" role="switch" type="button"><span class="sw-knob"></span></button>
+</div>
+<div class="field" style="margin-top:11px">
+<label for="selSendMode">发送方式</label>
+<select id="selSendMode">
+<option value="onebot">OneBot 按 wxid 直发（无需切换窗口）</option>
+<option value="clipboard">剪贴板（需前台搜索，存在同名风险）</option>
+<option value="auto">auto（兼容直发；超时停止，不重复发送）</option>
+</select>
+</div>
+</div><div class="card">
+<div class="card-h">
+<h2>自动回复标记</h2>
+<span class="hint" id="affixHint"></span>
+</div>
+<div class="quick" style="margin:10px 0;align-items:flex-start">
+<div class="field wide">
+<label for="inReplyPrefix">前缀</label>
+<textarea id="inReplyPrefix" maxlength="500" placeholder="例如：【AI 助理】" rows="2" spellcheck="false"></textarea>
+</div>
+<div class="field wide">
+<label for="inReplySuffix">后缀</label>
+<textarea id="inReplySuffix" maxlength="500" placeholder="例如：（AI生成）" rows="2" spellcheck="false"></textarea>
+</div>
+</div>
+
+<div class="field" style="margin-top:11px">
+<label>效果预览</label>
+<pre class="body-box" id="affixSample"></pre>
+</div>
+<div class="row-btns card-actions">
+<button class="btn primary" id="btnSaveAffixes" type="button">保存标记</button>
+<button class="btn" id="btnRevertAffixes" type="button">放弃修改</button>
+</div></div><div class="card">
+<div class="card-h"><h2>接话控制</h2><span class="hint" id="consecHint"></span></div>
+<div class="sw-row">
+<div class="sw-text"><b>跳过收尾消息</b></div>
+<button aria-checked="false" aria-label="收尾客套自动闭嘴" class="sw" data-switch="auto_skip" role="switch" type="button"><span class="sw-knob"></span></button>
+</div>
+<div class="quick" style="margin-top:11px">
+<div class="field">
+<label for="inMax">连续回复上限（0 不限）</label>
+<input id="inMax" max="20" min="0" step="1" type="number"/>
+</div>
+<button class="btn" id="btnSaveMax" type="button">保存</button>
+</div>
+<div class="mute-inline"><div class="note" id="muteStatus"></div><div class="row-btns" style="margin-top:10px">
+<button class="btn" data-mute="15" type="button">静音 15 分</button>
+<button class="btn" data-mute="30" type="button">静音 30 分</button>
+<button class="btn" data-mute="60" type="button">静音 1 小时</button>
+<button class="btn" data-mute="0" type="button">取消静音</button>
+</div><span class="hint" id="muteHint"></span></div></div></div>
+<details class="card tool-card"><summary><b>上下文管理</b><span class="hint" id="ctxMeta"></span></summary><div class="details-body">
+<div class="row-btns">
+<button class="btn sm" data-goto="ai" type="button">AI 专属与导入</button>
+<button class="btn sm danger" id="btnCtxClearAll" type="button">清空全部</button>
+</div>
+<div class="list sm" id="ctxList" style="margin-top:9px"></div>
+</div></details>
+<details class="card tool-card" id="sendDetails">
+<summary><b>手动发送</b><span class="hint" id="manualHint">需二次确认</span></summary>
+<div class="details-body">
+<p class="note" id="sendDisabledNote"></p>
+<div class="field" style="margin-bottom:9px">
+<label for="sendContact">发送给</label>
+<select id="sendContact"></select>
+</div>
+<details class="disclosure" id="manualTargetDetails"><summary>目标详情 / 手动输入</summary><div class="details-body"><div class="quick">
+<div class="field wide">
+<label for="sendTarget">微信 ID / 群 ID</label>
+<input autocomplete="off" id="sendTarget" placeholder="wxid_xxx / 12345@chatroom / filehelper" spellcheck="false" type="text"/>
+</div>
+<div class="field">
+<label for="sendName">昵称（可留空）</label>
+<input autocomplete="off" id="sendName" placeholder="仅用于日志显示" spellcheck="false" type="text"/>
+</div>
+<div class="field">
+<label for="sendGroup">群聊</label>
+<select id="sendGroup"><option value="no">否</option><option value="yes">是</option></select>
+</div>
+</div></div></details>
+<div class="field">
+<label for="sendText">消息内容</label>
+<textarea id="sendText" placeholder="写入要发送的文本（不会自动发送）" rows="3" spellcheck="false"></textarea>
+</div>
+<div class="row-btns">
+<button class="btn" id="btnSend" type="button">准备发送…</button>
+<button class="btn" id="btnSendFill" type="button">填入文件传输助手</button>
+</div>
+<div class="confirm-box" hidden="" id="sendConfirmWrap">
+<div class="cb-t" id="sendConfirmText"></div>
+<pre id="sendPreview"></pre>
+<div class="row-btns">
+<button class="btn primary" id="btnSendConfirm" type="button">确认发送</button>
+<button class="btn" id="btnSendCancel" type="button">取消</button>
+</div>
+</div>
+</div>
+</details>
+</section>
+<!-- ============ AI 会话 ============ -->
+<section class="page" hidden="" id="page-ai">
+<div class="ai-bar">
+<div class="ai-toolbar"><div aria-label="AI 设置分区" class="seg" id="aiTabs" role="group">
+<button data-ai-tab="global" type="button">全局配置</button>
+<button data-ai-tab="profile" type="button">联系人专属</button>
+<button data-ai-tab="history" type="button">历史与导入</button>
+<button data-ai-tab="debug" type="button">试生成草稿</button>
+</div>
+<span class="hint" id="aiLoadHint">尚未加载</span>
+<button class="btn sm" id="aiReload" type="button">刷新</button>
+</div>
+<div class="row-btns" hidden="" id="aiDrillBackWrap" style="margin-top:10px">
+<button class="btn sm" id="aiDrillBack" type="button">返回白名单与联系人</button>
+<span class="note" id="aiDrillNote"></span>
+</div>
+</div>
+<!-- ---------- 分区一：全局 AI 配置 ---------- -->
+<div class="ai-pane" id="aiPaneGlobal">
+<div class="card">
+<div class="card-h">
+<h2>全局 AI 配置</h2>
+<span class="hint" id="aiGlobalHint">尚未加载</span>
+</div>
+<div class="ai-editor-grid"><div class="field">
+<label for="aiGlobalPrompt">全局人设与回复规则 · 始终携带</label>
+<textarea id="aiGlobalPrompt" placeholder="描述你的身份、语气和回复习惯…" rows="5" spellcheck="false"></textarea>
+</div><div class="capabilities"><div class="sw-row">
+<div class="sw-text"><b>启用对话上下文</b></div>
+<button aria-checked="false" aria-label="启用对话上下文" class="sw" data-aisw="context_enabled" role="switch" type="button"><span class="sw-knob"></span></button>
+</div><div class="sw-row" style="margin-top:8px">
+<div class="sw-text"><b>图片识别回复</b></div>
+<button aria-checked="false" aria-label="图片识别回复" class="sw" data-aisw="image_enabled" role="switch" type="button"><span class="sw-knob"></span></button>
+</div><div class="sw-row">
+<div class="sw-text"><b>链接识别回复</b></div>
+<button aria-checked="false" aria-label="链接识别回复" class="sw" data-aisw="link_enabled" role="switch" type="button"><span class="sw-knob"></span></button>
+</div><details class="disclosure"><summary>上下文参数</summary><div class="quick">
+<div class="field">
+<label for="aiGlobalCtxMessages">历史条数</label>
+<select id="aiGlobalCtxMsgMode"><option value="recent">最近 N 条</option><option value="all">全部已保存历史</option></select>
+<input autocomplete="off" id="aiGlobalCtxMessages" inputmode="numeric" max="5000" min="0" step="1" type="number"/>
+</div>
+<div class="field">
+<label for="aiGlobalCtxCharLimit">字符上限</label>
+<input autocomplete="off" id="aiGlobalCtxCharLimit" inputmode="numeric" max="50000" min="1000" step="100" type="number"/>
+</div>
+</div><p class="note" id="aiGlobalNote"></p></details></div></div>
+<div class="row-btns card-actions" style="margin-top:12px">
+<button class="btn primary" id="aiGlobalSave" type="button">保存配置</button>
+<button class="btn" id="aiGlobalRevert" type="button">放弃修改</button>
+</div>
+</div>
+<div aria-live="polite" class="dirty-bar" hidden="" id="aiGlobalDirty" role="status">
+<span class="txt" id="aiGlobalDirtyText"></span>
+<button class="btn" id="aiGlobalDirtyRevert" type="button">放弃修改</button>
+<button class="btn primary" id="aiGlobalDirtySave" type="button">保存配置</button>
+</div>
+</div>
+<!-- ---------- 分区二：联系人专属配置 ---------- -->
+<div class="ai-pane" hidden="" id="aiPaneProfile">
+<div class="card">
+<div class="card-h">
+<h2>联系人专属配置</h2>
+<span class="hint" id="aiProfileHint">未选择联系人</span>
+<button class="btn sm" data-goto="allow" type="button">联系人表</button>
+</div>
+<div class="quick" style="margin:10px 0;align-items:flex-end">
+<div class="field wide">
+<label for="aiProfileSelect">联系人</label>
+<select id="aiProfileSelect"><option value="">（选择联系人）</option></select>
+</div>
+<details class="disclosure inline-more"><summary>手动 ID</summary><div class="details-body"><div class="quick"><div class="field">
+<label for="aiProfileUid">或手动输入 UID</label>
+<input autocomplete="off" id="aiProfileUid" placeholder="wxid_xxx / 12345@chatroom" spellcheck="false" type="text"/>
+</div><button class="btn" id="aiProfileLoad" type="button">载入</button></div></div></details>
+</div>
+<div class="note" id="aiProfileMeta" style="margin-bottom:4px"></div>
+<div class="profile-editors"><div class="field">
+<label for="aiProfilePrompt">专属补充 · 与全局人设合并</label>
+<textarea id="aiProfilePrompt" placeholder="针对这位联系人的回复要求…" rows="5" spellcheck="false"></textarea>
+</div><div class="field">
+<label for="aiProfileNotes">联系人备注</label>
+<textarea id="aiProfileNotes" placeholder="称呼、关系、约定等已知信息…" rows="5" spellcheck="false"></textarea>
+</div></div>
+<details class="disclosure"><summary>上下文设置</summary><div class="details-body"><div class="note" id="aiProfileSummary" style="margin-bottom:9px"></div><div class="quick" style="margin-top:10px;align-items:flex-end">
+<div class="field">
+<label for="aiProfileCtxMode">上下文开关</label>
+<select id="aiProfileCtxMode">
+<option value="inherit">继承全局</option>
+<option value="on">强制开启</option>
+<option value="off">强制关闭</option>
+</select>
+</div>
+<div class="field">
+<label for="aiProfileCtxMsgMode">上下文条数</label>
+<select id="aiProfileCtxMsgMode">
+<option value="inherit">继承全局</option>
+<option value="all">全部已保存历史</option>
+<option value="custom">最近 N 条（0–5000）</option>
+</select>
+</div>
+<div class="field">
+<label for="aiProfileCtxMessages">自定义条数</label>
+<input autocomplete="off" id="aiProfileCtxMessages" inputmode="numeric" max="5000" min="0" step="1" type="number"/>
+</div>
+</div></div></details>
+<div class="row-btns card-actions" style="margin-top:12px">
+<button class="btn primary" id="aiProfileSave" type="button">保存配置</button>
+<button class="btn" id="aiProfileRevert" type="button">放弃修改</button>
+<button class="btn" id="aiProfileReload" type="button">重新载入</button>
+<button class="btn" id="aiProfileCtxView" type="button">查看上下文与记录</button>
+</div>
+</div>
+<div aria-live="polite" class="dirty-bar" hidden="" id="aiProfileDirty" role="status">
+<span class="txt" id="aiProfileDirtyText"></span>
+<button class="btn" id="aiProfileDirtyRevert" type="button">放弃修改</button>
+<button class="btn primary" id="aiProfileDirtySave" type="button">保存配置</button>
+</div>
+</div>
+<!-- ---------- 分区三：聊天记录 + 导入 ---------- -->
+<div class="ai-pane" hidden="" id="aiPaneHistory">
+<div class="card">
+<div class="card-h">
+<h2>聊天记录</h2>
+<span class="hint" id="aiHistHint">未选择联系人</span>
+</div>
+<div class="quick" style="margin:10px 0;align-items:flex-end">
+<div class="field wide">
+<label for="aiHistSelect">联系人</label>
+<select id="aiHistSelect"><option value="">（选择联系人）</option></select>
+</div>
+<details class="disclosure inline-more"><summary>手动 ID</summary><div class="details-body"><div class="quick"><div class="field">
+<label for="aiHistUid">或手动输入 UID</label>
+<input autocomplete="off" id="aiHistUid" placeholder="wxid_xxx / 12345@chatroom" spellcheck="false" type="text"/>
+</div></div></div></details>
+<button class="btn primary" id="aiHistLoad" type="button">读取</button>
+<button class="btn danger" id="aiHistClear" type="button">清空记录</button>
+</div>
+<div class="list sm" id="aiHistList"></div>
+<div class="log-foot" style="border:0;border-radius:0;background:transparent;padding:9px 0 0">
+<span class="hint" id="aiHistMeta"></span>
+<button class="btn" id="aiHistMore" type="button">加载更早</button>
+</div>
+<details id="aiCtxBox" style="margin-top:12px">
+<summary>模型上下文</summary>
+<div class="details-body">
+<div class="row-btns">
+<button class="btn" id="aiHistCtxView" type="button">刷新上下文</button>
+<span class="hint" id="aiCtxHint">未读取</span>
+</div>
+<dl class="kv" id="aiCtxSummary"></dl>
+<div class="field">
+<label>生效提示词</label>
+<pre class="body-box" id="aiCtxPrompt"></pre>
+</div>
+<div class="field">
+<label>联系人备注</label>
+<pre class="body-box" id="aiCtxNotes"></pre>
+</div>
+<div class="field">
+<label>携带的历史</label>
+<pre class="body-box" id="aiCtxText"></pre>
+</div>
+</div>
+</details>
+</div>
+<details class="card tool-card"><summary><b>导入聊天记录</b><span class="hint" id="aiImportHint">未预览</span></summary><div class="details-body"><p class="note">JSON / TXT / CSV · ≤5MB · 先预览角色，再确认导入</p>
+<div class="quick" style="margin:10px 0;align-items:flex-end">
+<div class="field wide">
+<label for="aiImportSelect">导入到联系人</label>
+<select id="aiImportSelect"><option value="">（选择联系人）</option></select>
+</div>
+<details class="disclosure inline-more"><summary>手动 ID</summary><div class="details-body"><div class="quick"><div class="field">
+<label for="aiImportUid">或手动输入 UID</label>
+<input autocomplete="off" id="aiImportUid" placeholder="wxid_xxx / 12345@chatroom" spellcheck="false" type="text"/>
+</div></div></div></details>
+<details class="disclosure"><summary>导入选项</summary><div class="details-body"><div class="quick"><div class="field">
+<label for="aiImportFormat">格式</label>
+<select id="aiImportFormat">
+<option value="auto">自动识别</option>
+<option value="json">JSON</option>
+<option value="txt">TXT</option>
+<option value="csv">CSV</option>
+</select>
+</div><div class="field">
+<label for="aiImportSelf">TXT 中「本人」的昵称</label>
+<input autocomplete="off" id="aiImportSelf" placeholder="填写以免角色判断错误" spellcheck="false" type="text"/>
+</div></div></div></details>
+</div>
+<div class="row-btns" style="margin-bottom:9px">
+<button class="btn" id="aiImportPick" type="button">选择本地文件…</button>
+<input accept=".json,.txt,.csv,application/json,text/plain,text/csv" hidden="" id="aiImportFile" type="file"/>
+<button class="btn" id="aiImportClearText" type="button">清空文本</button>
+</div>
+<details class="disclosure"><summary>粘贴或编辑文本</summary><div class="details-body"><div class="field">
+<label for="aiImportText">聊天文本</label>
+<textarea id="aiImportText" placeholder="粘贴导出的聊天记录文本（JSON / TXT / CSV）" rows="4" spellcheck="false"></textarea>
+</div></div></details>
+<div class="row-btns" style="margin-top:9px">
+<button class="btn primary" id="aiImportPreviewBtn" type="button">预览记录</button>
+<button class="btn primary" disabled="" id="aiImportConfirm" type="button">确认导入</button>
+<button class="btn" disabled="" id="aiImportCancel" type="button">取消预览</button>
+</div>
+<div class="confirm-box" hidden="" id="aiImportPreviewBox" style="margin-top:11px">
+<div class="cb-t" id="aiImportPreviewTitle"></div>
+<dl class="kv" id="aiImportSummary"></dl>
+<div id="aiImportWarnings"></div>
+<div class="list sm" id="aiImportMsgs"></div>
+</div>
+</div></details>
+</div>
+<!-- ---------- 分区四：仅生成草稿的调试入口 ---------- -->
+<div class="ai-pane" hidden="" id="aiPaneDebug">
+<div class="cols">
+<div class="card">
+<div class="card-h">
+<h2>测试回复</h2>
+<span class="hint" id="aiGenHint"></span>
+</div>
+<div class="quick" style="margin:10px 0;align-items:flex-end">
+<div class="field wide">
+<label for="aiGenSelect">联系人</label>
+<select id="aiGenSelect"><option value="">（选择联系人）</option></select>
+</div>
+<details class="disclosure inline-more"><summary>手动 ID</summary><div class="details-body"><div class="quick"><div class="field">
+<label for="aiGenUid">或手动输入 UID</label>
+<input autocomplete="off" id="aiGenUid" placeholder="wxid_xxx / 12345@chatroom" spellcheck="false" type="text"/>
+</div></div></div></details>
+</div>
+<div class="field">
+<label for="aiGenText">对方消息（可含链接）</label>
+<textarea id="aiGenText" placeholder="输入一条消息，可附链接或图片…" rows="5" spellcheck="false"></textarea>
+</div>
+<div class="row-btns" style="margin-top:9px">
+<button class="btn" id="aiGenPick" type="button">选择图片…</button>
+<input accept="image/png,image/jpeg,image/webp" hidden="" id="aiGenImage" type="file"/>
+<span class="note" id="aiGenImgHint">单张图片 · ≤8MB</span>
+</div>
+<div class="thumbs" id="aiGenThumbs"></div>
+<div class="row-btns" style="margin-top:12px">
+<button class="btn primary" id="aiGenRun" type="button">生成草稿</button>
+</div>
+</div>
+<div class="card">
+<div class="card-h">
+<h2>草稿结果</h2>
+<span class="hint" id="aiGenMeta"></span>
+<button class="btn sm" disabled="" id="aiGenCopy" type="button">复制草稿</button>
+</div>
+<div class="note" id="aiGenState">尚未生成。</div>
+<pre class="body-box" hidden="" id="aiGenReply"></pre>
+<div id="aiGenInsights"></div>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+</div>
+<div class="modal-bd" hidden="" id="modalBd">
+<div aria-labelledby="modalTitle" aria-modal="true" class="modal" role="dialog">
+<div class="modal-h">
+<h3 id="modalTitle"></h3>
+<button aria-label="关闭" class="btn icon" id="modalX" type="button"></button>
+</div>
+<div class="modal-b" id="modalBody"></div>
+<div class="modal-f" id="modalFoot"></div>
+</div>
+</div>
+<div aria-atomic="false" aria-live="polite" class="toasts" id="toasts"></div>
+<noscript><p style="padding:20px">此控制台需要启用 JavaScript。</p></noscript>
+<script>
+(function () {
+  'use strict';
+
+  /* ================= 基础工具 ================= */
+  var $ = function (id) { return document.getElementById(id); };
+  var PREF = { theme: 'wxpanel.theme', page: 'wxpanel.page', paused: 'wxpanel.logs.paused' };
+  var STORE = {
+    get: function (k) { try { return window.localStorage.getItem(k); } catch (e) { return null; } },
+    set: function (k, v) { try { window.localStorage.setItem(k, v); } catch (e) { } }
+  };
+  var API = (function () {
+    var q = new URLSearchParams(window.location.search).get('api');
+    if (q) { return q.replace(/\/+$/, ''); }
+    if (window.location.protocol === 'file:') { return 'http://127.0.0.1:8080'; }
+    return '';
+  })();
+  var POLL_MS = 3000;
+
+  var ICONS = {
+    overview: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="1.6" y="1.6" width="5.2" height="5.2" rx="1.2"/><rect x="9.2" y="1.6" width="5.2" height="5.2" rx="1.2"/><rect x="1.6" y="9.2" width="5.2" height="5.2" rx="1.2"/><rect x="9.2" y="9.2" width="5.2" height="5.2" rx="1.2"/></svg>',
+    logs: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M2.4 3.6h11.2M2.4 8h11.2M2.4 12.4h7.4"/></svg>',
+    allow: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="5.4" r="2.5"/><path d="M1.9 13.4c.5-2.3 2.1-3.6 4.1-3.6s3.6 1.3 4.1 3.6"/><path d="M11.2 4.6l1.4 1.4 2.2-2.4"/></svg>',
+    reply: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13.6 9.2a2 2 0 0 1-2 2H5.4L2.4 13.8V4.4a2 2 0 0 1 2-2h7.2a2 2 0 0 1 2 2z"/><path d="M5.6 6.6h4.8M5.6 9h3"/></svg>',
+    ai: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7.4 1.9l1.5 3.4 3.4 1.5-3.4 1.5-1.5 3.4-1.5-3.4L2.5 6.8l3.4-1.5z"/><path d="M12.4 10.6l.7 1.6 1.6.7-1.6.7-.7 1.6-.7-1.6-1.6-.7 1.6-.7z"/></svg>',
+    wechat: '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1.4C4.1 1.4 1 4 1 7.2c0 1.9 1.1 3.6 2.8 4.6l-.7 2.3 2.5-1.3c.7.2 1.5.3 2.4.3 3.9 0 7-2.6 7-5.9S11.9 1.4 8 1.4z"/></svg>',
+    refresh: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13.4 8a5.4 5.4 0 1 1-1.6-3.8"/><path d="M13.6 1.8v3.2h-3.2"/></svg>',
+    x: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3.6 3.6l8.8 8.8M12.4 3.6l-8.8 8.8"/></svg>',
+    search: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="7" cy="7" r="4.2"/><path d="M10.2 10.2l3 3"/></svg>',
+    dot: '<svg viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="8" r="3"/></svg>'
+  };
+  var KIND = {
+    received: { zh: '接收', cls: 'k-received' }, reply: { zh: '回复', cls: 'k-reply' },
+    sent: { zh: '发送', cls: 'k-sent' }, skip: { zh: '跳过', cls: 'k-skip' },
+    muted: { zh: '静音', cls: 'k-muted' }, error: { zh: '错误', cls: 'k-error' },
+    info: { zh: '信息', cls: 'k-info' }
+  };
+  var SCOPE_ZH = { private: '私聊', group: '群聊', system: '系统' };
+  var PAGES = {
+    overview: { t: '运行总览', s: 'Overview', icon: 'overview' },
+    logs: { t: '消息日志', s: 'Message Log', icon: 'logs' },
+    allow: { t: '白名单与联系人', s: 'Allowlist & Contacts', icon: 'allow' },
+    reply: { t: '回复策略', s: 'Reply Policy', icon: 'reply' },
+    ai: { t: 'AI 会话', s: 'AI Assistant', icon: 'ai' }
+  };
+  var SVC_META = {
+    wechat: { name: '微信 · FridaGadget', port: 27042, tip: '客户端注入与消息捕获' },
+    gadget: { name: '微信 · FridaGadget', port: 27042, tip: '客户端注入与消息捕获' },
+    onebot: { name: 'OneBot 接收', port: 58080, tip: '好消息捕获端' },
+    bridge: { name: '桥接服务', port: 36060, tip: '本控制台后端' },
+    hermes: { name: 'Hermes 模型', port: null, tip: '模型调用状态' }
+  };
+  var SVC_ORDER = ['wechat', 'gadget', 'onebot', 'bridge', 'hermes'];
+  var SVC_LABEL = { online: '在线', offline: '离线', waiting: '等待捕获', unknown: '未知' };
+
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) { n.className = cls; }
+    if (text !== undefined && text !== null) { n.textContent = String(text); }
+    return n;
+  }
+  function clear(node) { while (node.firstChild) { node.removeChild(node.firstChild); } }
+  function setText(id, text) { var n = $(id); if (n) { n.textContent = text === undefined || text === null ? '' : String(text); } }
+  function setIcon(id, name) { var n = $(id); if (n) { n.innerHTML = ICONS[name] || ''; } }
+  function nfmt(v) { var n = Number(v); if (!isFinite(n)) { return '–'; } try { return n.toLocaleString('zh-CN'); } catch (e) { return String(n); } }
+  function fmtUptime(sec) {
+    var s = Math.max(0, Math.round(Number(sec) || 0));
+    var d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60;
+    if (d > 0) { return d + ' 天 ' + h + ' 小时'; }
+    if (h > 0) { return h + ' 小时 ' + m + ' 分'; }
+    if (m > 0) { return m + ' 分 ' + ss + ' 秒'; }
+    return ss + ' 秒';
+  }
+  function fmtAgo(epoch) {
+    var e = Number(epoch);
+    if (!e) { return '—'; }
+    var d = Date.now() / 1000 - e;
+    if (d < 0) { d = 0; }
+    if (d < 60) { return Math.floor(d) + ' 秒前'; }
+    if (d < 3600) { return Math.floor(d / 60) + ' 分钟前'; }
+    if (d < 86400) { return Math.floor(d / 3600) + ' 小时前'; }
+    return Math.floor(d / 86400) + ' 天前';
+  }
+  function fmtClock(ts) {
+    var e = Number(ts);
+    if (!e) { return '--:--:--'; }
+    var d = new Date(e * 1000);
+    return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+  }
+  function fmtDate(ts) {
+    var e = Number(ts);
+    if (!e) { return ''; }
+    var d = new Date(e * 1000);
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  }
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function nowStamp() {
+    var d = new Date();
+    return d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + '-' + pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds());
+  }
+
+  /* ================= 提示与弹窗 ================= */
+  function toast(type, title, detail) {
+    var box = el('div', 'toast ' + (type || 'info'));
+    box.appendChild(el('b', null, title));
+    if (detail) { box.appendChild(el('span', null, detail)); }
+    $('toasts').appendChild(box);
+    var kill = function () {
+      box.classList.add('out');
+      window.setTimeout(function () { if (box.parentNode) { box.parentNode.removeChild(box); } }, 220);
+    };
+    window.setTimeout(kill, type === 'err' ? 6500 : 3400);
+  }
+
+  var modalCtx = null;
+  function openModal(opts) {
+    modalCtx = opts;
+    setText('modalTitle', opts.title || '');
+    setIcon('modalX', 'x');
+    var body = $('modalBody'); clear(body);
+    if (opts.build) { opts.build(body); }
+    var foot = $('modalFoot'); clear(foot);
+    (opts.actions || []).forEach(function (a) {
+      var b = el('button', 'btn' + (a.kind ? ' ' + a.kind : ''), a.label);
+      b.type = 'button';
+      if (a.disabled) { b.disabled = true; }
+      b.addEventListener('click', function () {
+        if (a.onClick) { a.onClick(b); } else { closeModal(); }
+      });
+      foot.appendChild(b);
+    });
+    if (!(opts.actions || []).length) { foot.hidden = true; } else { foot.hidden = false; }
+    $('modalBd').hidden = false;
+    var first = foot.querySelector('button');
+    if (first && !first.disabled) { first.focus(); }
+  }
+  function closeModal() { $('modalBd').hidden = true; modalCtx = null; }
+  function confirmBox(opts) {
+    return new Promise(function (resolve) {
+      openModal({
+        title: opts.title || '请确认',
+        build: function (body) {
+          var p = el('p', 'note', opts.message || '');
+          body.appendChild(p);
+          if (opts.detail) {
+            var pre = el('pre', 'body-box');
+            pre.textContent = String(opts.detail);
+            body.appendChild(pre);
+          }
+        },
+        actions: [
+          { label: opts.cancelText || '取消', onClick: function () { closeModal(); resolve(false); } },
+          {
+            label: opts.okText || '确认', kind: opts.danger ? 'danger' : 'primary',
+            onClick: function (btn) { btn.disabled = true; closeModal(); resolve(true); }
+          }
+        ]
+      });
+    });
+  }
+
+  /* ================= 账号作用域 ================= */
+  /* 当前登录微信的唯一会话作用域。token 由后端 /api/state 下发，随登录账号或微信进程变化而变。
+     绝不写入 localStorage，也绝不拼到外部 URL。 */
+  var ACCT = {
+    token: '', id: '', name: '', verified: false, ready: true,
+    status: '', detail: '', lastHeader: '', reloading: false
+  };
+  function acctKnown() { return !!ACCT.token; }
+  function acctWriteOk() { return ACCT.verified === true && !ACCT.reloading; }           /* 未确认账号时禁止改配置/清理/导入/生成/发送 */
+  function acctSendOk() { return ACCT.verified === true && ACCT.ready === true && !ACCT.reloading; } /* 收发通道就绪才能发 */
+  function acctGuard(label) {
+    if (acctWriteOk()) { return true; }
+    toast('err', '操作已暂停', '当前微信账号未确认，' + (label || '该操作') + '已被前端拦下（后端同样会拒绝）。');
+    return false;
+  }
+  function acctChanged() {
+    if (ACCT.reloading) { return; }
+    ACCT.reloading = true;
+    try { toast('err', '账号已变化', '正在刷新页面以隔离旧账号数据…'); } catch (e) { }
+    window.setTimeout(function () { window.location.reload(); }, 150);
+  }
+  /* 用 /api/state 的 account 同步作用域；返回 false 表示账号已变化（已触发整页刷新，调用方应丢弃本次数据） */
+  function syncAccount(d) {
+    var a = (d && d.account && typeof d.account === 'object') ? d.account : null;
+    var hdr = ACCT.lastHeader || '';
+    if (!a && !hdr) { return true; }
+    a = a || {};
+    var tok = String(a.token || hdr || '');
+    var prev = ACCT.token;
+    if (prev && tok && prev !== tok) { acctChanged(); return false; }
+    ACCT.id = String(a.id || '');
+    ACCT.name = String(a.name || '');
+    ACCT.verified = a.verified === true;
+    ACCT.ready = a.ready !== false;
+    ACCT.status = String(a.status || '');
+    ACCT.detail = String(a.detail || '');
+    if (tok) { ACCT.token = tok; }
+    renderAccount();
+    /* 首次还没有 token（页面刚初始化）必须接受，绝不 reload，否则死循环 */
+    if (prev && tok && prev !== tok) { acctChanged(); return false; }
+    return true;
+  }
+  /* 媒体地址必须携带当前作用域 pin：<img> 无法发请求头，只能走 account_token 查询参数。
+     绝不给外部（非本后端）URL 拼 token。 */
+  function mediaUrl(u) {
+    var value = String(u === null || u === undefined ? '' : u);
+    if (!value || value.indexOf('data:') === 0 || value.indexOf('blob:') === 0) { return value; }
+    try {
+      var backend = new URL(API || window.location.origin);
+      var target = new URL(value, backend);
+      if (target.origin === backend.origin && target.pathname === '/api/media' && ACCT.token) {
+        target.searchParams.set('account_token', ACCT.token);
+      }
+      return target.href;
+    } catch (e) { return value; }
+  }
+
+  /* ================= 网络 ================= */
+  function api(path, opts) {
+    if (ACCT.reloading) { var changed = new Error('账号已变化，正在刷新'); changed.accountChanged = true; return Promise.reject(changed); }
+    opts = opts || {};
+    var p = String(path || '');
+    var isState = p.indexOf('/api/state') === 0;
+    /* 非 /api 请求（根 HTML / favicon）以及 /api/state 本身不需要作用域头 */
+    if (isState || p.indexOf('/api/') !== 0) { return apiFetch(p, opts, '', isState); }
+    if (ACCT.token) { return apiFetch(p, opts, ACCT.token, false); }
+    /* 首次还没有 token：先只 GET state 拿 token，再发原请求 */
+    return apiFetch('/api/state', { timeout: 12000 }, '', true).then(function () {
+      if (!ACCT.token) { throw new Error('未获取到账号会话标识（后端未返回 account.token）'); }
+      return apiFetch(p, opts, ACCT.token, false);
+    });
+  }
+  function apiFetch(path, opts, reqToken, isState) {
+    var ctrl = new AbortController();
+    var timer = window.setTimeout(function () { ctrl.abort(); }, opts.timeout || 12000);
+    var init = { method: opts.method || 'GET', signal: ctrl.signal, cache: 'no-store' };
+    var headers = {};
+    if (opts.body !== undefined && opts.body !== null) {
+      headers['Content-Type'] = 'application/json';
+      init.body = JSON.stringify(opts.body);
+    }
+    if (reqToken) { headers['X-Wechat-Account'] = reqToken; }
+    if (Object.keys(headers).length) { init.headers = headers; }
+    return fetch(API + path, init).then(function (res) {
+      window.clearTimeout(timer);
+      var scopeTok = '';
+      try { scopeTok = res.headers.get('X-Wechat-Account') || ''; } catch (e) { scopeTok = ''; }
+      if (isState && scopeTok) { ACCT.lastHeader = scopeTok; }
+      return res.text().then(function (txt) {
+        var data = null;
+        if (txt) { try { data = JSON.parse(txt); } catch (e) { data = null; } }
+        if (res.status === 409 && data && data.code === 'ACCOUNT_CHANGED') {
+          /* 账号已变化：绝不自动重试任何（尤其是写）操作，直接丢弃并刷新页面 */
+          acctChanged();
+          var e409 = new Error(data.error || '账号已变化，请刷新页面');
+          e409.httpStatus = 409; e409.accountChanged = true; throw e409;
+        }
+        if (!res.ok) {
+          var m = (data && (data.error || data.message)) || ('接口返回 HTTP ' + res.status);
+          var e1 = new Error(m); e1.httpStatus = res.status; throw e1;
+        }
+        if (data && data.ok === false) {
+          var e2 = new Error(data.error || '操作失败'); e2.soft = true; throw e2;
+        }
+        /* 响应收到时如请求 token 与当前已知 token 不等 → 丢弃，不应用（防旧账号回调串写新账号） */
+        if (!isState && reqToken && ACCT.token && reqToken !== ACCT.token) {
+          var e3 = new Error('账号已变化，本次结果已丢弃');
+          e3.accountChanged = true; throw e3;
+        }
+        if (ACCT.reloading || (isState && !syncAccount(data))) {
+          var changed = new Error('账号已变化，本次结果已丢弃'); changed.accountChanged = true; throw changed;
+        }
+        return data;
+      });
+    }, function (err) {
+      window.clearTimeout(timer);
+      var e = new Error(err && err.name === 'AbortError' ? '请求超时' : '无法连接到桥接服务');
+      e.network = true; throw e;
+    });
+  }
+  function busy(btn, on) {
+    if (!btn) { return; }
+    btn.disabled = !!on;
+    btn.classList.toggle('busy', !!on);
+    btn.setAttribute('aria-busy', on ? 'true' : 'false');
+  }
+  function fail(err, prefix) {
+    if (err && (err.accountChanged || err.httpStatus === 409)) { return; }  /* 账号已变化：正在整页刷新，不再弹错 */
+    var msg = err && err.message ? err.message : String(err);
+    if (err && err.httpStatus === 404) { msg = '接口不存在（HTTP 404）：' + msg; }
+    toast('err', prefix || '操作失败', msg);
+  }
+
+  /* ================= 全局状态 ================= */
+  var state = null;
+  var online = false, lastOkAt = null, failures = 0, inflight = {};
+  var activePage = (function () {
+    var p = STORE.get(PREF.page);
+    return PAGES[p] ? p : 'overview';
+  })();
+  var logs = {
+    items: [], ids: {}, total: 0, hasMore: false, nextBefore: null,
+    loading: false, loadingMore: false, pendingMore: false, error: null,
+    filters: { kind: 'all', scope: 'all', q: '', uid: '' },
+    paused: STORE.get(PREF.paused) === '1'
+  };
+  var alDirty = false, alWork = [], alBase = [], alServerChanged = false;
+  var ctEdits = {}, ctDeleted = {}, ctBase = {}, ctDirty = false;
+  var sendArmed = null;
+  var groupPreviews = {}, groupPreviewLoading = {};
+
+  function clientContacts() {
+    var src = {};
+    var k;
+    var base = state && state.contacts && typeof state.contacts === 'object' ? state.contacts : {};
+    for (k in base) { if (Object.prototype.hasOwnProperty.call(base, k)) { src[k] = base[k]; } }
+    for (k in ctBase) { if (Object.prototype.hasOwnProperty.call(ctBase, k) && !(k in src)) { src[k] = ctBase[k]; } }
+    for (k in ctEdits) { if (Object.prototype.hasOwnProperty.call(ctEdits, k)) { src[k] = ctEdits[k]; } }
+    for (k in ctDeleted) { if (Object.prototype.hasOwnProperty.call(ctDeleted, k)) { delete src[k]; } }
+    return src;
+  }
+  function nameOf(uid) {
+    var c = clientContacts();
+    var n = c[uid];
+    return n && n !== uid ? n : (String(uid || '').endsWith('@chatroom') ? '未获取群名' : (uid || '未知'));
+  }
+
+  function isUnnamedGroup(uid) {
+    var n = clientContacts()[uid];
+    return String(uid).endsWith('@chatroom') && (!n || n === uid || n === '未命名群聊' || n === '未获取群名');
+  }
+  function groupPreviewText(item, uid) {
+    var member = item.kind === 'sent' ? '我' : String(item.member || '').trim();
+    /* Old unnamed-group logs put the speaker in name before the title bug was fixed. */
+    var legacy = String(item.name || '').trim();
+    if (!member && clientContacts()[uid] === '未命名群聊' && legacy && legacy !== uid && legacy !== '未命名群聊' && legacy !== '未获取群名') {
+      member = legacy;
+    }
+    var text = String(item.text || '');
+    var prefix = text.match(/^([^:\n]{1,200})[:：]\s*([\s\S]*)$/);
+    if (prefix && (!member || prefix[1].trim() === member || /^wxid_[A-Za-z0-9_]+$/.test(prefix[1].trim()))) {
+      if (!member) { member = prefix[1].trim(); }
+      text = prefix[2];
+    }
+    text = text.replace(/\s+/g, ' ').trim();
+    return (member || '未知成员') + '：' + (text || '[空消息]');
+  }
+  function loadUnnamedGroupPreviews() {
+    var page = $('ctList').closest('section.page');
+    if (!state || !ACCT.token || !ACCT.verified || ACCT.reloading || (page && page.hidden)) { return; }
+    var token = ACCT.token;
+    var revision = JSON.stringify([(state.stats || {}).last_received || 0,(state.stats || {}).last_sent || 0]);
+    Object.keys(clientContacts()).forEach(function (uid) {
+      if (!isUnnamedGroup(uid) || groupPreviewLoading[uid] || (groupPreviews[uid] && groupPreviews[uid].revision === revision)) { return; }
+      groupPreviewLoading[uid] = true;
+      function findLatest(before) {
+        var path = '/api/logs?scope=group&kind=all&limit=50&q=' + encodeURIComponent(uid);
+        if (before !== null) { path += '&before=' + encodeURIComponent(before); }
+        return api(path).then(function (data) {
+          var items = Array.isArray(data.items) ? data.items : [];
+          for (var i = 0; i < items.length; i++) {
+            if (items[i].uid === uid && (items[i].kind === 'sent' || (items[i].kind === 'received' && String(items[i].msg || '').indexOf('[群]') === 0))) { return items[i]; }
+          }
+          if (data.has_more && data.next_before !== null && data.next_before !== undefined && (before === null || Number(data.next_before) < Number(before))) {
+            return findLatest(data.next_before);
+          }
+          return null;
+        });
+      }
+      findLatest(null).then(function (item) {
+        if (ACCT.reloading || ACCT.token !== token) { return; }
+        groupPreviews[uid] = { revision: revision, text: item ? groupPreviewText(item, uid) : '', error: false };
+      }).catch(function (error) {
+        if (ACCT.reloading || ACCT.token !== token || (error && error.accountChanged)) { return; }
+        var old = groupPreviews[uid];
+        groupPreviews[uid] = { revision: revision, text: old ? old.text : '', error: true };
+      }).then(function () {
+        delete groupPreviewLoading[uid];
+        if (!ACCT.reloading && ACCT.token === token) { renderContacts(); }
+      });
+    });
+  }
+
+  /* ================= 主题 ================= */
+  var mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+  function themePref() {
+    var p = STORE.get(PREF.theme);
+    return (p === 'light' || p === 'dark' || p === 'system') ? p : 'system';
+  }
+  function applyTheme() {
+    var pref = themePref();
+    var resolved = pref === 'system' ? (mq && mq.matches ? 'dark' : 'light') : pref;
+    document.documentElement.setAttribute('data-theme', resolved);
+    var seg = $('themeSeg');
+    Array.prototype.forEach.call(seg.querySelectorAll('button'), function (b) {
+      b.setAttribute('aria-pressed', b.getAttribute('data-theme-pref') === pref ? 'true' : 'false');
+    });
+  }
+  $('themeSeg').addEventListener('click', function (ev) {
+    var b = ev.target.closest('button[data-theme-pref]');
+    if (!b) { return; }
+    STORE.set(PREF.theme, b.getAttribute('data-theme-pref'));
+    applyTheme();
+  });
+  if (mq && mq.addEventListener) { mq.addEventListener('change', function () { if (themePref() === 'system') { applyTheme(); } }); }
+  else if (mq && mq.addListener) { mq.addListener(function () { if (themePref() === 'system') { applyTheme(); } }); }
+  applyTheme();
+  setIcon('brandMark', 'wechat');
+  setIcon('refreshBtn', 'refresh');
+  setIcon('modalX', 'x');
+  setIcon('lgSearchIcon', 'search');
+  setIcon('alSearchIcon', 'search');
+  setIcon('ctSearchIcon', 'search');
+
+  /* ================= 导航 ================= */
+  function buildNav() {
+    var list = $('navList'); clear(list);
+    Object.keys(PAGES).forEach(function (k) {
+      var b = el('button', 'nav-item');
+      b.type = 'button';
+      b.setAttribute('data-page', k);
+      b.innerHTML = PAGES[k].icon ? ICONS[PAGES[k].icon] : '';
+      b.appendChild(el('span', null, PAGES[k].t));
+      b.appendChild(el('span', 'nav-count', ''));
+      b.addEventListener('click', function () { showPage(k); });
+      list.appendChild(b);
+    });
+  }
+  function showPage(key) {
+    if (!PAGES[key]) { key = 'overview'; }
+    activePage = key;
+    STORE.set(PREF.page, key);
+    Object.keys(PAGES).forEach(function (k) {
+      var pg = $('page-' + k);
+      if (pg) { pg.hidden = k !== key; }
+    });
+    Array.prototype.forEach.call($('navList').querySelectorAll('.nav-item'), function (b) {
+      if (b.getAttribute('data-page') === key) { b.setAttribute('aria-current', 'page'); }
+      else { b.removeAttribute('aria-current'); }
+    });
+    setText('pageTitle', PAGES[key].t);
+    setText('pageSub', PAGES[key].s);
+    syncTopPill();
+    if (state) {
+      renderServices(); renderStats(); renderRuntime(); renderRecent();
+      renderSettings(); renderAllow(); renderContacts(); renderCtx();
+      renderLogsMeta();
+    }
+    if (key === 'logs' && !logs.items.length) { loadLogs({ reset: true }); }
+    if (key === 'overview') { loadRecent(); }
+    if (key === 'ai') { aiEnter(); }
+  }
+  document.addEventListener('click', function (ev) {
+    var g = ev.target.closest('[data-goto]');
+    if (g) { showPage(g.getAttribute('data-goto')); }
+  });
+
+  /* ================= 服务 / 统计 / 运行信息 ================= */
+  function normSvc(raw, idx) {
+    var id = String(raw.id || '').toLowerCase();
+    if (!id) {
+      var key = String(raw.name || '').toLowerCase();
+      if (key.indexOf('gadget') >= 0 || key.indexOf('微信') >= 0 || key.indexOf('frida') >= 0) { id = 'wechat'; }
+      else if (key.indexOf('onebot') >= 0) { id = 'onebot'; }
+      else if (key.indexOf('桥接') >= 0 || key.indexOf('bridge') >= 0) { id = 'bridge'; }
+      else if (key.indexOf('hermes') >= 0 || key.indexOf('模型') >= 0) { id = 'hermes'; }
+      else { id = 'svc' + idx; }
+    }
+    var st = String(raw.status || '').toLowerCase();
+    if (st !== 'online' && st !== 'offline' && st !== 'waiting' && st !== 'unknown') {
+      st = (raw.on === true) ? 'online' : (raw.on === false ? 'offline' : 'unknown');
+    }
+    if (id === 'gadget') { id = 'wechat'; }
+    var meta = SVC_META[id] || {};
+    var port = raw.port !== undefined && raw.port !== null ? raw.port : (meta.port || null);
+    return {
+      id: id,
+      name: raw.name || meta.name || ('服务 ' + (idx + 1)),
+      status: st,
+      label: raw.label || SVC_LABEL[st] || st,
+      detail: raw.detail || meta.tip || '',
+      port: port,
+      pid: (raw.pid === undefined || raw.pid === null) ? null : raw.pid
+    };
+  }
+  function serviceList() {
+    var out = [], seen = {};
+    if (state && Array.isArray(state.services)) {
+      state.services.forEach(function (s, i) {
+        var n = normSvc(s || {}, i);
+        n._idx = i;
+        out.push(n);
+        seen[n.id] = true;
+      });
+    }
+    SVC_ORDER.forEach(function (id, i) {
+      if (id === 'gadget') { return; }
+      var already = out.some(function (o) { return o.id === id; });
+      if (!already) {
+        var m = SVC_META[id] || {};
+        out.push({ id: id, name: m.name || id, status: 'unknown', label: '未知', detail: m.tip || '', port: m.port, pid: null, _idx: 90 + i });
+      }
+    });
+    return out;
+  }
+  function renderServices() {
+    var grid = $('svcGrid'); clear(grid);
+    var svcs = serviceList();
+    var stale = !online;
+    if (stale) {
+      svcs = svcs.map(function (s) {
+        var c = {};
+        for (var k in s) { if (Object.prototype.hasOwnProperty.call(s, k)) { c[k] = s[k]; } }
+        c.status = 'unknown';
+        c.label = '未知 · 离线';
+        return c;
+      });
+    }
+    var onlineCount = 0;
+    svcs.forEach(function (s) {
+      if (s.status === 'online') { onlineCount++; }
+      var box = el('div', 'svc');
+      var top = el('div', 'svc-top');
+      top.appendChild(el('span', 'dot ' + s.status));
+      top.appendChild(el('b', null, s.name));
+      box.appendChild(top);
+      var st = el('div', 'svc-st');
+      st.appendChild(el('span', null, s.label));
+      if (s.port) { st.appendChild(el('span', 'mono', ':' + s.port)); }
+      if (s.pid) { st.appendChild(el('span', 'mono', 'PID ' + s.pid)); }
+      box.appendChild(st);
+      var d = s.detail || '';
+      var more = el('details', 'svc-more'); more.appendChild(el('summary', null, '详情')); more.appendChild(el('div', 'svc-detail', d)); box.appendChild(more);
+      grid.appendChild(box);
+    });
+    setText('svcHint', stale ? '离线 · 数据为最后一次快照' : (onlineCount + ' / ' + svcs.length + ' 在线'));
+    $('svcHint').className = 'hint' + (stale ? ' err' : '');
+    var chain = $('chainLine'); clear(chain);
+    var ordered = svcs.slice().sort(function (a, b) { return a._idx - b._idx; });
+    ordered.forEach(function (s, i) {
+      if (i > 0) { chain.appendChild(el('span', 'arw', '›')); }
+      var n = el('span', 'node');
+      n.appendChild(el('span', 'dot ' + s.status));
+      n.appendChild(el('span', null, shortName(s)));
+      if (s.port) { n.appendChild(el('span', 'mono', ':' + s.port)); }
+      n.title = s.name + ' · ' + s.label + (s.detail ? ' · ' + s.detail : '');
+      chain.appendChild(n);
+    });
+  }
+  function shortName(s) {
+    if (s.id === 'wechat' || s.id === 'gadget') { return '微信/Gadget'; }
+    if (s.id === 'onebot') { return 'OneBot'; }
+    if (s.id === 'bridge') { return '桥接'; }
+    if (s.id === 'hermes') { return 'Hermes'; }
+    return s.name;
+  }
+  function statTile(k, v, sub, mod) {
+    var d = el('div', 'stat');
+    d.appendChild(el('div', 'stat-k', k));
+    d.appendChild(el('div', 'stat-v num' + (mod ? ' ' + mod : ''), v));
+    d.appendChild(el('div', 'stat-s', sub || ''));
+    return d;
+  }
+  function renderStats() {
+    var g = $('statGrid'); clear(g);
+    if (!state) {
+      ['今日收件', '今日发送', '今日错误', '白名单'].forEach(function (k) { g.appendChild(statTile(k, '–', '等待数据')); });
+      return;
+    }
+    var s = state.stats && typeof state.stats === 'object' ? state.stats : {};
+    var alCount = Array.isArray(state.allowlist) ? state.allowlist.length : 0;
+    g.appendChild(statTile('今日收件', nfmt(s.today_received), '最后 ' + fmtAgo(s.last_received)));
+    g.appendChild(statTile('今日发送', nfmt(s.today_sent), '最后 ' + fmtAgo(s.last_sent)));
+    g.appendChild(statTile('今日错误', nfmt(s.today_errors), Number(s.today_errors) > 0 ? '需要关注' : '暂无错误', Number(s.today_errors) > 0 ? 'err' : ''));
+    var alSub = alCount ? alCount + ' 条条目' : (state.allow_all ? '白名单为空 · 放行所有人' : '白名单为空 · 谁都不回');
+    if (!online) { alSub += ' · 离线快照'; }
+    g.appendChild(statTile('白名单', nfmt(alCount), alSub, alCount ? '' : 'warn'));
+    if (!online) {
+      Array.prototype.forEach.call(g.querySelectorAll('.stat-s'), function (n) {
+        if (n.textContent.indexOf('离线快照') < 0) { n.textContent = n.textContent + ' · 离线快照'; }
+      });
+    }
+  }
+  function renderRuntime() {
+    var kv = $('rtKv'); clear(kv);
+    if (!state) {
+      [['桥接运行', '–'], ['服务时间', '–'], ['进程 PID', '–'], ['待处理', '–']].forEach(function (r) {
+        kv.appendChild(el('dt', null, r[0])); kv.appendChild(el('dd', null, r[1]));
+      });
+      return;
+    }
+    var s = state.stats && typeof state.stats === 'object' ? state.stats : {};
+    function add(k, v, cls) {
+      kv.appendChild(el('dt', null, k));
+      var dd = el('dd', null, v);
+      if (cls) { dd.classList.add(cls); }
+      kv.appendChild(dd);
+    }
+    add('桥接运行', fmtUptime(state.bridge_uptime));
+    add('服务时间', state.server_time ? (fmtClock(state.server_time) + ' · ' + fmtDate(state.server_time)) : '—');
+    add('进程 PID', state.pid ? state.pid : '—');
+    add('待处理', nfmt(s.pending) + ' 条');
+    add('累计事件', nfmt(s.total_events) + ' 条');
+    var muted = Number(state.muted_left) > 0;
+    var md = el('dd', null, muted ? (state.muted_desc || '已静音') : '未静音');
+    kv.appendChild(el('dt', null, '静音状态'));
+    if (muted) { md.classList.add('mute-on'); }
+    kv.appendChild(md);
+    setText('rtHint', online ? '数据来自 /api/state · 3s' : '离线快照');
+    var row = $('muteRow'); clear(row);
+    [['15', '静音 15 分'], ['30', '静音 30 分'], ['60', '静音 1 小时'], ['0', '取消静音']].forEach(function (m) {
+      var b = el('button', 'btn sm' + (m[0] === '0' ? '' : ''), m[1]);
+      b.type = 'button';
+      b.setAttribute('data-mute', m[0]);
+      b.disabled = !online;
+      row.appendChild(b);
+    });
+  }
+  function renderRecent() {
+    var box = $('recentList');
+    var items = recent.items;
+    if (!items) { return; }
+    clear(box);
+    if (recent.error) {
+      box.appendChild(el('div', 'empty', '日志接口暂不可用：' + recent.error));
+      setText('recentMeta', '');
+      return;
+    }
+    if (!items.length) {
+      box.appendChild(el('div', 'empty', '暂无活动记录'));
+      setText('recentMeta', '');
+      return;
+    }
+    items.slice(0, 8).forEach(function (it) {
+      var row = el('div', 'act-row');
+      row.setAttribute('data-kind', String(it.kind || it.lvl || 'info'));
+      row.appendChild(el('span', 'act-time mono', it.t || fmtClock(it.ts)));
+      var km = KIND[it.kind || it.lvl] || { zh: it.kind || '', cls: '' };
+      row.appendChild(el('span', 'chip ' + km.cls, km.zh));
+      row.appendChild(el('span', 'act-msg', it.msg || it.text || ''));
+      if (it.name) { row.appendChild(el('span', 'tag', it.name)); }
+      box.appendChild(row);
+    });
+    setText('recentMeta', '最近 ' + Math.min(items.length, 8) + ' 条 · ' + (online ? '实时' : '离线快照'));
+  }
+
+  /* ================= 日志 ================= */
+  var recent = { items: null, error: null };
+  function loadRecent() {
+    return api('/api/logs?kind=all&limit=8').then(function (d) {
+      recent.items = (d && Array.isArray(d.items)) ? d.items : [];
+      recent.error = null;
+      renderRecent();
+    }).catch(function (err) {
+      if (state && Array.isArray(state.logs)) {
+        recent.items = state.logs.slice(-8).reverse().map(function (l, i) {
+          return { id: -1 - i, t: l.t, lvl: l.lvl, kind: l.lvl, msg: l.msg, name: '', scope: 'system' };
+        });
+        recent.error = null;
+      } else {
+        recent.items = recent.items || [];
+        recent.error = err && err.message ? err.message : '未知错误';
+      }
+      renderRecent();
+    });
+  }
+  function logQuery(head) {
+    var f = logs.filters;
+    var qs = 'kind=' + encodeURIComponent(f.kind || 'all') +
+      '&scope=' + encodeURIComponent(f.scope || 'all') +
+      '&limit=' + (head ? 50 : 50);
+    if (f.q) { qs += '&q=' + encodeURIComponent(f.q); }
+    if (!head && logs.nextBefore) { qs += '&before=' + encodeURIComponent(logs.nextBefore); }
+    return '/api/logs?' + qs;
+  }
+  function loadLogs(opts) {
+    opts = opts || {};
+    if (opts.reset) {
+      logs.generation = (logs.generation || 0) + 1;
+      logs.items = []; logs.ids = {}; logs.total = 0; logs.hasMore = false; logs.nextBefore = null; logs.error = null;
+      renderLogsMeta(); renderLogList();
+    }
+    var head = !opts.more;
+    if (head && (logs.loading || logs.loadingMore)) {
+      if (opts.reset) { logs.pendingReset = true; }
+      return Promise.resolve();
+    }
+    if (!head) {
+      if (logs.loadingMore) { return Promise.resolve(); }
+      if (logs.loading) { logs.pendingMore = true; return Promise.resolve(); }
+    }
+    if (head) { logs.loading = true; } else { logs.loadingMore = true; }
+    var btn = $('logMore');
+    if (!head) { btn.disabled = true; setText('logHeadHint', '加载更早的记录…'); }
+    var meta = $('logHeadHint');
+    if (meta) { meta.textContent = '加载中…'; }
+    var generation = logs.generation;
+    return api(logQuery(head)).then(function (d) {
+      if (generation !== logs.generation) { return; }
+      var items = (d && Array.isArray(d.items)) ? d.items : [];
+      if (head) {
+        mergeLogs(items);
+        logs.total = d && typeof d.total === 'number' ? d.total : logs.items.length;
+        logs.hasMore = logs.items.length < logs.total && !!(d && d.has_more);
+        logs.nextBefore = logs.hasMore ? Math.min.apply(null, logs.items.map(function (it) { return Number(it.id); })) : null;
+      } else {
+        var added = 0;
+        items.forEach(function (it) {
+          var key = String(it.id);
+          if (!logs.ids[key]) { logs.ids[key] = true; logs.items.push(it); added++; }
+        });
+        if (d) {
+          if (typeof d.total === 'number') { logs.total = d.total; }
+          logs.hasMore = !!d.has_more;
+          logs.nextBefore = d.next_before === undefined ? null : d.next_before;
+        }
+        if (!added && !logs.hasMore) { logs.nextBefore = null; }
+      }
+      logs.items.sort(function (a, b) { return Number(b.id) - Number(a.id); });
+      logs.error = null;
+      if (logs.filters.uid && !visibleLogItems().length && logs.hasMore) { logs.pendingMore = true; }
+      renderLogList(); renderLogsMeta();
+    }).catch(function (err) {
+      logs.error = err && err.message ? err.message : '加载失败';
+      if (generation !== logs.generation) { return; }
+      if (head && !logs.items.length) { renderLogList(); }
+      renderLogsMeta();
+      if (opts.silent !== true) { fail(err, '日志加载失败'); }
+    }).then(function () {
+      logs.loading = false; logs.loadingMore = false;
+      if (logs.pendingReset) {
+        logs.pendingReset = false; logs.pendingMore = false;
+        return loadLogs({ reset: false });
+      }
+      btn.disabled = !logs.hasMore;
+      if (logs.pendingMore && logs.hasMore) {
+        logs.pendingMore = false;
+        return loadLogs({ more: true });
+      }
+      logs.pendingMore = false;
+    });
+  }
+  function mergeLogs(items) {
+    items.forEach(function (it) {
+      var key = String(it.id);
+      if (logs.ids[key]) { return; }
+      logs.ids[key] = true;
+      logs.items.push(it);
+    });
+  }
+  function makeLogRow(it) {
+    var kind = String(it.kind || it.lvl || 'info');
+    var row = el('div', 'log-row');
+    row.setAttribute('data-kind', kind);
+    row.setAttribute('data-id', String(it.id));
+    row.setAttribute('data-uid', String(it.uid || ''));
+    row.setAttribute('role', 'listitem');
+    row.tabIndex = 0;
+    row.setAttribute('title', '点击查看完整内容');
+    var t = el('span', 'log-time');
+    t.appendChild(el('b', null, it.t || fmtClock(it.ts)));
+    t.appendChild(el('i', null, it.date || fmtDate(it.ts)));
+    row.appendChild(t);
+    var km = KIND[kind] || { zh: kind || '记录', cls: '' };
+    row.appendChild(el('span', 'chip ' + km.cls, km.zh));
+    row.appendChild(el('span', 'log-msg', it.msg || it.text || '(空)'));
+    var who = el('span', 'log-who');
+    who.appendChild(el('b', null, it.name || (it.uid ? it.uid : '—')));
+    var sub = (SCOPE_ZH[it.scope] || '') + (it.uid ? (SCOPE_ZH[it.scope] ? ' · ' : '') + it.uid : '');
+    if (it.member) { sub += ' · ' + it.member; }
+    who.appendChild(el('i', null, sub || '系统'));
+    row.appendChild(who);
+    return row;
+  }
+  function visibleLogItems() {
+    var uid = logs.filters.uid;
+    return uid ? logs.items.filter(function (it) { return it.uid === uid; }) : logs.items;
+  }
+  function renderLogList() {
+    var box = $('logList'); clear(box);
+    var items = visibleLogItems();
+    if (logs.error && !logs.items.length) {
+      box.appendChild(el('div', 'empty', '日志加载失败：' + logs.error));
+      return;
+    }
+    if (!items.length) {
+      box.appendChild(el('div', 'empty', logs.loading ? '加载中…' : '当前筛选条件下没有记录'));
+      return;
+    }
+    var frag = document.createDocumentFragment();
+    items.forEach(function (it) { frag.appendChild(makeLogRow(it)); });
+    box.appendChild(frag);
+  }
+  function renderLogsMeta() {
+    var f = logs.filters;
+    var count = visibleLogItems().length;
+    var parts = [];
+    parts.push('已加载 ' + count + ' 条');
+    if (!f.uid) { parts.push('匹配共 ' + (logs.total || count) + ' 条'); }
+    var bits = [];
+    if (f.uid) { bits.push('对象=' + nameOf(f.uid) + '（精确 ID）'); }
+    if (f.kind !== 'all') { bits.push('类型=' + ((KIND[f.kind] || {}).zh || f.kind)); }
+    if (f.scope !== 'all') { bits.push('范围=' + (SCOPE_ZH[f.scope] || f.scope)); }
+    if (f.q) { bits.push('搜索=' + f.q); }
+    setText('logMeta', parts.join(' · ') + (bits.length ? ' · ' + bits.join(' · ') : '') + (logs.hasMore ? ' · 还有更早的记录' : ' · 已到底'));
+    var more = $('logMore');
+    more.disabled = !logs.hasMore || logs.loadingMore;
+    more.hidden = !logs.hasMore;
+    setText('logHeadHint', logs.loading ? '加载中…' : (logs.error ? ('错误：' + logs.error) : (logs.paused ? '实时轮询已暂停' : '实时轮询 · 3s')));
+    var note = '导出 JSON 只包含当前已加载的 ' + count + ' 条记录（不是全量日志）。点击任意行可查看完整内容。';
+    setText('lgNote', note);
+    var cnt = $('navList').querySelector('.nav-item[data-page="logs"] .nav-count');
+    if (cnt) { cnt.textContent = count ? String(count) : ''; }
+  }
+  function syncTopPill() {
+    var pill = $('pollPill');
+    if (activePage === 'logs') {
+      pill.textContent = logs.paused ? '已暂停' : '实时 · 3s';
+      pill.className = 'pill' + (logs.paused ? ' warn' : ' ok');
+    } else if (!online) {
+      pill.textContent = '离线';
+      pill.className = 'pill err';
+    } else {
+      pill.textContent = '实时 · 3s';
+      pill.className = 'pill ok';
+    }
+    var pb = $('lgPause');
+    pb.setAttribute('aria-pressed', logs.paused ? 'true' : 'false');
+    pb.textContent = logs.paused ? '恢复实时' : '暂停实时';
+  }
+  function openLogDetail(it) {
+    openModal({
+      title: '日志详情 #' + it.id,
+      build: function (body) {
+        var dl = el('dl', 'kv');
+        function add(k, v) {
+          if (v === undefined || v === null || v === '') { return; }
+          dl.appendChild(el('dt', null, k));
+          dl.appendChild(el('dd', null, String(v)));
+        }
+        add('时间', (it.date || fmtDate(it.ts)) + ' ' + (it.t || fmtClock(it.ts)));
+        add('类型', (KIND[it.kind || it.lvl] || {}).zh || it.kind || it.lvl);
+        add('级别', it.lvl);
+        add('范围', SCOPE_ZH[it.scope] || it.scope);
+        add('昵称', it.name);
+        add('UID', it.uid);
+        add('成员', it.member);
+        body.appendChild(dl);
+        var label = el('div', 'note', '完整内容');
+        body.appendChild(label);
+        var pre = el('pre', 'body-box');
+        pre.textContent = it.text || it.msg || '(空)';
+        body.appendChild(pre);
+        if (it.msg && it.text && it.msg !== it.text) {
+          body.appendChild(el('div', 'note', '摘要'));
+          var pre2 = el('pre', 'body-box');
+          pre2.textContent = it.msg;
+          body.appendChild(pre2);
+        }
+      },
+      actions: [{ label: '关闭', kind: 'primary' }]
+    });
+  }
+  function exportLogs() {
+    var f = logs.filters;
+    var items = visibleLogItems();
+    var payload = {
+      exported_at: new Date().toISOString(),
+      source: '面板 /api/logs',
+      note: '仅包含客户端已加载的记录（共 ' + items.length + ' 条），不是全量日志。',
+      filters: { kind: f.kind, scope: f.scope, q: f.q, uid: f.uid || '' },
+      loaded_count: items.length,
+      total_matched: f.uid ? null : logs.total,
+      has_more: logs.hasMore,
+      items: items
+    };
+    var text = JSON.stringify(payload, null, 2);
+    var blob = new Blob([text], { type: 'application/json;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'wechat-logs-' + nowStamp() + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+    toast('ok', '已导出', '当前筛选下已加载的 ' + items.length + ' 条记录');
+  }
+  /* 日志事件绑定 */
+  $('logList').addEventListener('click', function (ev) {
+    var row = ev.target.closest('.log-row');
+    if (!row) { return; }
+    var id = row.getAttribute('data-id');
+    var it = logs.items.filter(function (x) { return String(x.id) === id; })[0];
+    if (it) { openLogDetail(it); }
+  });
+  $('logList').addEventListener('keydown', function (ev) {
+    if (ev.key !== 'Enter' && ev.key !== ' ') { return; }
+    var row = ev.target.closest('.log-row');
+    if (!row) { return; }
+    ev.preventDefault();
+    var id = row.getAttribute('data-id');
+    var it = logs.items.filter(function (x) { return String(x.id) === id; })[0];
+    if (it) { openLogDetail(it); }
+  });
+  var qTimer = null;
+  $('lgQ').addEventListener('input', function (ev) {
+    var v = ev.target.value.trim();
+    window.clearTimeout(qTimer);
+    qTimer = window.setTimeout(function () {
+      logs.filters.q = v;
+      logs.filters.uid = '';
+      loadLogs({ reset: true });
+    }, 350);
+  });
+  $('lgKind').addEventListener('change', function (ev) {
+    logs.filters.kind = ev.target.value;
+    loadLogs({ reset: true });
+  });
+  $('lgScope').addEventListener('click', function (ev) {
+    var b = ev.target.closest('button[data-scope]');
+    if (!b) { return; }
+    logs.filters.scope = b.getAttribute('data-scope');
+    syncScopeSeg();
+    loadLogs({ reset: true });
+  });
+  function syncScopeSeg() {
+    Array.prototype.forEach.call($('lgScope').querySelectorAll('button'), function (b) {
+      b.setAttribute('aria-pressed', b.getAttribute('data-scope') === logs.filters.scope ? 'true' : 'false');
+    });
+  }
+  $('lgPause').addEventListener('click', function () {
+    logs.paused = !logs.paused;
+    STORE.set(PREF.paused, logs.paused ? '1' : '0');
+    syncTopPill(); renderLogsMeta();
+    toast('info', logs.paused ? '已暂停实时轮询' : '已恢复实时轮询');
+    if (!logs.paused) { loadLogs({ reset: false }); }
+  });
+  $('lgReset').addEventListener('click', function () {
+    window.clearTimeout(qTimer);
+    logs.filters = { kind: 'all', scope: 'all', q: '', uid: '' };
+    $('lgQ').value = ''; $('lgKind').value = 'all';
+    syncScopeSeg();
+    loadLogs({ reset: true });
+  });
+  $('lgExport').addEventListener('click', exportLogs);
+  $('logMore').addEventListener('click', function () { loadLogs({ more: true }); });
+
+  /* ================= 白名单 / 联系人 ================= */
+  function allowlistBase() { return (state && Array.isArray(state.allowlist)) ? state.allowlist.slice() : []; }
+  function allowHas(name) {
+    var t = String(name === undefined || name === null ? '' : name).trim();
+    if (!t) { return false; }
+    return alWork.some(function (x) { return String(x).trim() === t; });
+  }
+  function markAlDirty() {
+    alDirty = true;
+    renderAllow();
+  }
+  function renderAllow() {
+    var list = $('alList'); clear(list);
+    var q = ($('alSearch').value || '').trim().toLowerCase();
+    var items = alWork.map(function (v, i) { return { v: v, i: i }; });
+    if (q) { items = items.filter(function (o) { return o.v.toLowerCase().indexOf(q) >= 0; }); }
+    if (!alWork.length) {
+      list.appendChild(el('div', 'empty', '白名单为空：当前谁都不会触发自动回复（安全默认）。'));
+    } else if (!items.length) {
+      list.appendChild(el('div', 'empty', '没有匹配「' + q + '」的条目'));
+    } else {
+      items.forEach(function (o) {
+        var row = el('div', 'list-row');
+        var main = el('div', 'list-main');
+        var cs = clientContacts();
+        var k;
+        var isUidKey = Object.prototype.hasOwnProperty.call(cs, o.v);
+        var uid = isUidKey ? o.v : null;
+        if (!uid) {
+          /* 兼容旧昵称条目：只在联系人表里能唯一反查到一个 wxid 时才认它（绝不猜） */
+          var hits = [];
+          for (k in cs) { if (Object.prototype.hasOwnProperty.call(cs, k) && String(cs[k]) === String(o.v)) { hits.push(k); } }
+          if (hits.length === 1) { uid = hits[0]; }
+        }
+        var name = isUidKey ? (cs[o.v] || o.v) : o.v;
+        main.appendChild(el('b', null, name));
+        var sub;
+        if (isUidKey) {
+          sub = uid + '';
+        } else if (uid) {
+          sub = '昵称匹配 · ' + uid + '';
+        } else {
+          sub = '未关联联系人';
+        }
+        main.appendChild(el('i', null, sub));
+        row.appendChild(main);
+        var acts = el('div', 'list-acts');
+        var cfg = el('button', 'btn sm', '配置');
+        cfg.type = 'button';
+        if (uid) {
+          cfg.setAttribute('data-al-config', uid);
+          cfg.title = '在 AI 页为 ' + uid + ' 配置专属提示词、事实备注与上下文';
+        } else {
+          cfg.disabled = true;
+          cfg.title = '无法唯一定位 wxid：请在「联系人表」按精确 ID 配置';
+        }
+        acts.appendChild(cfg);
+        var rm = el('button', 'btn sm danger', '移除');
+        rm.type = 'button';
+        rm.setAttribute('data-al-remove', String(o.i));
+        rm.disabled = !acctWriteOk();
+        acts.appendChild(rm);
+        row.appendChild(acts);
+        list.appendChild(row);
+      });
+    }
+    setText('alHint', alWork.length + ' 条' + (alDirty ? ' · 未保存' : '') + (alServerChanged && alDirty ? ' · 服务端已变化' : ''));
+    var empt = !alWork.length;
+    setText('alSemantics', empt ? (state && state.allow_all ? '所有人可触发' : '空白名单，不回复') : '仅白名单');
+    var hint = $('alHint');
+    hint.className = 'hint' + (alDirty ? ' warn' : '');
+    renderDirtyBar();
+  }
+  function renderContacts() {
+    loadUnnamedGroupPreviews();
+    var list = $('ctList'); clear(list);
+    var cs = clientContacts();
+    var q = ($('ctSearch').value || '').trim().toLowerCase();
+    var rows = Object.keys(cs).map(function (k) { return [k, cs[k]]; });
+    if (q) {
+      rows = rows.filter(function (r) {
+        var preview = isUnnamedGroup(r[0]) && groupPreviews[r[0]] ? groupPreviews[r[0]].text : '';
+        return (String(r[0]) + ' ' + String(r[1]) + ' ' + nameOf(r[0]) + ' ' + preview).toLowerCase().indexOf(q) >= 0;
+      });
+    }
+    rows.sort(function (a, b) { return String(a[1]).localeCompare(String(b[1]), 'zh'); });
+    if (!rows.length) {
+      list.appendChild(el('div', 'empty', Object.keys(cs).length ? '没有匹配的联系人' : '联系人表为空'));
+    } else {
+      rows.forEach(function (r) {
+        var uid = r[0], nm = r[1];
+        var row = el('div', 'list-row');
+        var main = el('div', 'list-main');
+        var b = el('b', 'contact-title');
+        var label = el('span', 'contact-label', nameOf(uid));
+        label.title = nameOf(uid);
+        b.appendChild(label);
+        if (isUnnamedGroup(uid)) {
+          var preview = groupPreviews[uid];
+          var full = preview && preview.text ? preview.text : (preview ? (preview.error ? '最近发言暂不可用' : '暂无发言记录') : '读取最近发言…');
+          var pv = el('span', 'contact-group-preview', '· ' + full);
+          pv.title = full;
+          b.appendChild(pv);
+        }
+        if (!allowHas(nm) && !allowHas(uid)) { b.appendChild(el('span', 'tag warn', '不在白名单')); }
+        if (ctEdits[uid] !== undefined) { b.appendChild(el('span', 'tag', '已修改')); }
+        main.appendChild(b);
+        main.appendChild(el('i', null, uid + (uid.indexOf('@chatroom') > 0 ? ' · 群' : '')));
+        row.appendChild(main);
+        var acts = el('div', 'list-acts');
+        var cfgc = el('button', 'btn sm', '配置');
+        cfgc.type = 'button';
+        cfgc.setAttribute('data-ct-config', uid);
+        cfgc.title = '在 AI 页为 ' + uid + ' 配置专属提示词、事实备注与上下文';
+        acts.appendChild(cfgc);
+        var lg = el('button', 'btn sm', '日志');
+        lg.type = 'button';
+        lg.setAttribute('data-ct-log', uid);
+        lg.title = '查看 ' + nameOf(uid) + ' 的消息日志';
+        acts.appendChild(lg);
+        if (!allowHas(nm) && !allowHas(uid)) {
+          var add = el('button', 'btn sm', '加入白名单');
+          add.type = 'button';
+          add.setAttribute('data-ct-allow', uid);
+          add.disabled = !acctWriteOk();
+          acts.appendChild(add);
+        }
+        var ed = el('button', 'btn sm', '改名');
+        ed.type = 'button';
+        ed.setAttribute('data-ct-edit', uid);
+        ed.disabled = !acctWriteOk();
+        acts.appendChild(ed);
+        var del = el('button', 'btn sm danger', '删除');
+        del.type = 'button';
+        del.setAttribute('data-ct-del', uid);
+        del.disabled = !acctWriteOk();
+        acts.appendChild(del);
+        row.appendChild(acts);
+        list.appendChild(row);
+      });
+    }
+    setText('ctHint', rows.length + ' / ' + Object.keys(cs).length + ' 条' + (ctDirty ? ' · 未保存' : ''));
+    var ch = $('ctHint');
+    ch.className = 'hint' + (ctDirty ? ' warn' : '');
+    renderDirtyBar();
+  }
+  function renderDirtyBar() {
+    var bar = $('dirtyBar');
+    var any = alDirty || ctDirty;
+    bar.hidden = !any;
+    if (!any) { return; }
+    var parts = [];
+    if (alDirty) { parts.push('白名单 ' + alWork.length + ' 条'); }
+    if (ctDirty) {
+      var ne = Object.keys(ctEdits).length, nd = Object.keys(ctDeleted).length;
+      parts.push('联系人：改 ' + ne + ' · 删 ' + nd);
+    }
+    setText('dirtyText', '有未保存的修改（' + parts.join('，') + '）· 实时刷新不会覆盖编辑');
+  }
+  function addAllow(v, silent) {
+    var t = String(v || '').trim();
+    if (!t) { if (!silent) { toast('err', '内容为空', '请输入昵称或 wxid'); } return false; }
+    if (allowHas(t)) { if (!silent) { toast('info', '已存在', '「' + t + '」已在白名单中'); } return false; }
+    alWork.push(t);
+    markAlDirty();
+    return true;
+  }
+  $('alAdd').addEventListener('click', function () {
+    var inp = $('alNew');
+    if (addAllow(inp.value)) { inp.value = ''; inp.focus(); }
+  });
+  $('alNew').addEventListener('keydown', function (ev) {
+    if (ev.key === 'Enter') { ev.preventDefault(); $('alAdd').click(); }
+  });
+  $('alList').addEventListener('click', function (ev) {
+    var b = ev.target.closest('[data-al-remove]');
+    if (!b) { return; }
+    var i = parseInt(b.getAttribute('data-al-remove'), 10);
+    if (isNaN(i) || alWork[i] === undefined) { return; }
+    var removed = alWork.splice(i, 1)[0];
+    markAlDirty();
+    toast('info', '已从列表移除', '「' + removed + '」（保存后生效）');
+  });
+  $('alSearch').addEventListener('input', function () { renderAllow(); });
+  $('ctSearch').addEventListener('input', function () { renderContacts(); });
+  $('alBulkToggle').addEventListener('click', function () {
+    var w = $('alBulkWrap');
+    w.hidden = !w.hidden;
+    if (!w.hidden) { $('alBulk').value = alWork.join('\n'); $('alBulk').focus(); }
+  });
+  $('alBulkFill').addEventListener('click', function () { $('alBulk').value = alWork.join('\n'); });
+  $('alBulkCancel').addEventListener('click', function () { $('alBulkWrap').hidden = true; });
+  $('alBulkApply').addEventListener('click', function () {
+    var lines = $('alBulk').value.split('\n').map(function (s) { return s.trim(); }).filter(function (s) { return s; });
+    var seen = {}, out = [], dup = 0;
+    lines.forEach(function (s) {
+      if (Object.prototype.hasOwnProperty.call(seen, s)) { dup++; return; }
+      seen[s] = true; out.push(s);
+    });
+    alWork = out;
+    markAlDirty();
+    $('alBulkWrap').hidden = true;
+    toast('ok', '已应用到列表', out.length + ' 条' + (dup ? '，忽略重复 ' + dup + ' 条' : '') + '（还需点击保存）');
+  });
+  $('ctAdd').addEventListener('click', function () {
+    var uid = ($('ctNewUid').value || '').trim();
+    var nm = ($('ctNewName').value || '').trim();
+    if (!uid) { toast('err', 'wxid 不能为空', '例如 wxid_xxx 或 12345@chatroom'); return; }
+    if (!nm) { toast('err', '昵称不能为空', '发送时按这个名字搜索会话'); return; }
+    var cs = clientContacts();
+    if (cs[uid] !== undefined && ctDeleted[uid] === undefined) { toast('info', 'wxid 已存在', '可直接点击「改名」修改'); return; }
+    if (ctDeleted[uid] !== undefined) { delete ctDeleted[uid]; ctDirty = true; }
+    ctEdits[uid] = nm;
+    ctDirty = true;
+    $('ctNewUid').value = ''; $('ctNewName').value = '';
+    renderContacts();
+    toast('ok', '已加入列表', uid + ' → ' + nm + '（保存后生效）');
+  });
+  $('ctList').addEventListener('click', function (ev) {
+    var logButton = ev.target.closest('[data-ct-log]');
+    if (logButton) {
+      var logUid = logButton.getAttribute('data-ct-log');
+      window.clearTimeout(qTimer);
+      logs.filters = {kind:'all',scope:logUid.endsWith('@chatroom') ? 'group' : 'private',q:logUid,uid:logUid};
+      $('lgQ').value = logUid; $('lgKind').value = 'all';
+      syncScopeSeg();
+      logs.items = [];
+      showPage('logs');
+      return;
+    }
+    var allow = ev.target.closest('[data-ct-allow]');
+    if (allow) {
+      var uidA = allow.getAttribute('data-ct-allow');
+      var nmA = clientContacts()[uidA] || uidA;
+      if (addAllow(uidA)) { toast('ok', '已加入白名单', nmA + '（' + uidA + '，保存后生效）'); }
+      return;
+    }
+    var ed = ev.target.closest('[data-ct-edit]');
+    if (ed) {
+      var uid = ed.getAttribute('data-ct-edit');
+      var cur = clientContacts()[uid] || '';
+      var inp = el('input', null, '');
+      inp.type = 'text';
+      inp.value = cur;
+      openModal({
+        title: '修改昵称',
+        build: function (body) {
+          body.appendChild(el('div', 'note', 'wxid：' + uid + ' · 昵称仅用于显示与剪贴板搜索，OneBot 直发按 wxid'));
+          body.appendChild(inp);
+        },
+        actions: [
+          { label: '取消' },
+          {
+            label: '确定', kind: 'primary', onClick: function (btn) {
+              var v = (inp.value || '').trim();
+              if (!v) { toast('err', '昵称不能为空'); return; }
+              ctEdits[uid] = v;
+              ctDirty = true;
+              closeModal();
+              renderContacts();
+              toast('ok', '已修改', uid + ' → ' + v + '（保存后生效）');
+            }
+          }
+        ]
+      });
+      window.setTimeout(function () { inp.focus(); inp.select(); }, 30);
+      return;
+    }
+    var del = ev.target.closest('[data-ct-del]');
+    if (del) {
+      var uidD = del.getAttribute('data-ct-del');
+      var nmD = clientContacts()[uidD] || uidD;
+      confirmBox({
+        title: '删除联系人',
+        message: '确认从联系人表中删除「' + nmD + '」？保存后该 wxid 会从列表消失（剪贴板发送方式将无法按名字搜索到它；OneBot 直发按 wxid，不受影响）。',
+        detail: uidD,
+        okText: '删除', danger: true
+      }).then(function (yes) {
+        if (!yes) { return; }
+        delete ctEdits[uidD];
+        ctDeleted[uidD] = true;
+        ctDirty = true;
+        renderContacts();
+        toast('info', '已标记删除', nmD + '（保存后生效）');
+      });
+    }
+  });
+  $('dirtyRevert').addEventListener('click', function () {
+    confirmBox({ title: '放弃修改', message: '将丢弃白名单与联系人表的所有未保存修改，恢复为服务端当前值。', okText: '放弃', danger: true }).then(function (yes) {
+      if (!yes) { return; }
+      alDirty = false; ctDirty = false; ctEdits = {}; ctDeleted = {}; ctBase = {};
+      alWork = allowlistBase();
+      renderAllow(); renderContacts();
+      toast('info', '已放弃修改');
+    });
+  });
+  $('dirtySave').addEventListener('click', function () {
+    if (!acctGuard('保存白名单与联系人')) { return; }
+    var btn = $('dirtySave');
+    busy(btn, true);
+    var chain = Promise.resolve();
+    if (alDirty) {
+      chain = chain.then(function () {
+        return api('/api/allowlist', { method: 'POST', body: { allowlist: alWork.slice() } }).then(function (d) {
+          if (d && d.state) { Object.assign(state, d.state); }
+          alDirty = false; alBase = allowlistBase();
+          if (!ctDirty) { alWork = allowlistBase(); }
+        });
+      });
+    }
+    if (ctDirty) {
+      chain = chain.then(function () {
+        return api('/api/contacts', { method: 'POST', body: { changes: Object.assign({}, ctEdits), deleted: Object.keys(ctDeleted) } }).then(function (d) {
+          if (d && d.state && d.state.contacts) { state.contacts = d.state.contacts; }
+          ctDirty = false; ctEdits = {}; ctDeleted = {}; ctBase = {};
+        });
+      });
+    }
+    chain.then(function () {
+      toast('ok', '已保存', '白名单与联系人表已更新');
+      renderAllow(); renderContacts();
+    }).catch(function (err) {
+      fail(err, '保存失败');
+    }).then(function () { busy(btn, false); });
+  });
+
+  /* ================= 回复策略 ================= */
+  function swFor(key) { return document.querySelector('.sw[data-switch="' + key + '"]'); }
+  function disableSettings(on) {
+    Array.prototype.forEach.call(document.querySelectorAll('.sw[data-switch]'), function (b) { b.disabled = !!on; });
+    var sel = $('selSendMode');
+    if (sel) { sel.disabled = !!on; }
+    ['inMax'].forEach(function (id) {
+      var n = $(id);
+      if (n) { n.disabled = !!on; }
+    });
+  }
+  function renderSettings() {
+    if (!state) {
+      disableSettings(true);
+      return;
+    }
+    disableSettings(false);
+    /* 未确认账号：所有会改配置的开关一律禁用；收发未就绪：仅禁用 auto_reply / send_enabled */
+    var wOk = acctWriteOk();
+    ['auto_reply', 'reply_groups', 'send_enabled', 'allow_all', 'auto_skip'].forEach(function (k) {
+      var b = swFor(k);
+      if (b) {
+        b.setAttribute('aria-checked', state[k] ? 'true' : 'false');
+        var gate = !wOk || ((k === 'auto_reply' || k === 'send_enabled') && !acctSendOk() && !state[k]);
+        b.disabled = !online || gate;
+      }
+    });
+    var alEmpty = !(Array.isArray(state.allowlist) && state.allowlist.length);
+    setText('trigHint', (state.auto_reply ? '自动回复已开启' : '自动回复已关闭'));
+    setText('allowAllNote', state.allow_all
+      ? (alEmpty ? '所有人均可触发，请谨慎' : '仅回复白名单联系人')
+      : '仅回复白名单联系人');
+    var sm = $('selSendMode');
+    if (document.activeElement !== sm) { sm.value = state.send_mode || 'onebot'; }
+    sm.disabled = !online || !wOk;
+    var mx = $('inMax');
+    if (document.activeElement !== mx) { mx.value = state.max_consec === undefined || state.max_consec === null ? 3 : state.max_consec; }
+    mx.disabled = !online || !wOk;
+    setText('sendHint', state.send_enabled ? '已启用' : '已停用 · 不会发出任何消息');
+    $('sendHint').className = 'hint' + (state.send_enabled ? '' : ' warn');
+    setText('consecHint', (state.max_consec === 0 ? '不限轮数' : '最多 ' + state.max_consec + ' 轮'));
+    var muted = Number(state.muted_left) > 0;
+    setText('muteHint', muted ? '静音中' : '未静音');
+    setText('muteStatus', muted
+      ? ('当前静音：' + (state.muted_desc || '已静音') + '（剩余 ' + Math.ceil(Number(state.muted_left) / 60) + ' 分钟左右）')
+      : '快捷静音');
+    var mb = document.querySelectorAll('[data-mute]');
+    Array.prototype.forEach.call(mb, function (b) {
+      b.disabled = !online || !wOk;
+      var m = b.getAttribute('data-mute');
+      b.setAttribute('aria-pressed', (m === '0' && !muted) ? 'true' : 'false');
+    });
+    var canSend = wOk && acctSendOk();
+    if (!wOk) {
+      setText('sendDisabledNote', '当前微信账号未确认，发送已暂停（后端同样拒绝）。');
+      $('sendDisabledNote').className = 'note err';
+    } else if (!acctSendOk()) {
+      setText('sendDisabledNote', '收发待重连：当前微信已确认但收发通道未连接，暂不能开启自动回复或发送。');
+      $('sendDisabledNote').className = 'note warn';
+    } else {
+      setText('sendDisabledNote', state.send_enabled
+        ? '确认后发送，手动消息不加 AI 标记。'
+        : '发送已关闭，请先启用发送。');
+      $('sendDisabledNote').className = 'note' + (state.send_enabled ? '' : ' warn');
+    }
+    $('btnSend').disabled = !online || !state.send_enabled || !canSend;
+    $('btnSendConfirm').disabled = !online || !state.send_enabled || !canSend;
+    $('sendTarget').disabled = !online || !canSend;
+    $('sendName').disabled = !online || !canSend;
+    $('sendGroup').disabled = !online || !canSend;
+    $('sendText').disabled = !online || !canSend;
+    $('btnSendFill').disabled = !online || !canSend;
+    var sc = $('sendContact');
+    if (sc) { sc.disabled = !online; }
+    syncSendContact();
+    renderAffixes();
+  }
+  document.addEventListener('click', function (ev) {
+    var sw = ev.target.closest('.sw[data-switch]');
+    if (!sw || sw.disabled) { return; }
+    var key = sw.getAttribute('data-switch');
+    var target = !(state && state[key]);
+    var go = Promise.resolve(true);
+    if (target && key === 'allow_all') {
+      go = confirmBox({
+        title: '开启「放行所有人」',
+        message: '开启后，当白名单为空时任何人都能触发自动回复并被 Hermes 回答。这会带来骚扰与隐私风险。',
+        okText: '仍然开启', danger: true
+      });
+    } else if (target && key === 'send_enabled') {
+      go = confirmBox({
+        title: '启用发送',
+        message: '启用后，桥接在满足条件时会向微信真实发送消息（自动回复 / 手动发送）。确认启用？',
+        okText: '启用', danger: true
+      });
+    } else if (target && key === 'auto_reply') {
+      var alEmpty = !(state && Array.isArray(state.allowlist) && state.allowlist.length);
+      if (alEmpty && !(state && state.allow_all)) {
+        go = confirmBox({
+          title: '开启自动回复（白名单为空）',
+          message: '白名单为空且未开启「放行所有人」，开启后仍然是谁都不会回复。是否继续？',
+          okText: '继续开启'
+        });
+      }
+    } else if (target && key === 'reply_groups') {
+      go = confirmBox({
+        title: '群消息也自动回复',
+        message: '开启后，群聊中到达的消息也会进入自动回复流程（可能被群里其他人看到）。',
+        okText: '开启'
+      });
+    }
+    go.then(function (yes) {
+      if (!yes) { return; }
+      var body = {};
+      body[key] = target;
+      sw.disabled = true;
+      api('/api/settings', { method: 'POST', body: body }).then(function (d) {
+        if (d && d.state) { Object.assign(state, d.state); }
+        else if (state) { state[key] = target; }
+        renderSettings(); renderStats(); renderAllow();
+        toast('ok', '设置已更新', swTitle(key) + '：' + (target ? '开启' : '关闭'));
+      }).catch(function (err) {
+        fail(err, '设置失败');
+      }).then(function () { sw.disabled = !online; });
+    });
+  });
+  function swTitle(k) {
+    return ({ auto_reply: '自动回复', reply_groups: '群消息自动回复', send_enabled: '启用发送', allow_all: '放行所有人', auto_skip: '收尾自动闭嘴' })[k] || k;
+  }
+  $('selSendMode').addEventListener('change', function (ev) {
+    var v = ev.target.value;
+    ev.target.disabled = true;
+    api('/api/settings', { method: 'POST', body: { send_mode: v } }).then(function (d) {
+      if (d && d.state) { Object.assign(state, d.state); }
+      else if (state) { state.send_mode = v; }
+      renderSettings();
+      toast('ok', '发送方式已更新', v);
+    }).catch(function (err) {
+      fail(err, '更新失败');
+      if (state) { ev.target.value = state.send_mode || 'onebot'; }
+    }).then(function () { ev.target.disabled = !online; });
+  });
+  function saveNumber(btn, key, input, min, max, label) {
+    var raw = (input.value || '').trim();
+    var n = parseInt(raw, 10);
+    if (raw === '' || isNaN(n)) { toast('err', '请输入整数', label); return; }
+    if (n < min || n > max) { toast('err', '超出范围', label + ' 需在 ' + min + '–' + max + ' 之间'); return; }
+    busy(btn, true);
+    var body = {};
+    body[key] = n;
+    api('/api/settings', { method: 'POST', body: body }).then(function (d) {
+      if (d && d.state) { Object.assign(state, d.state); }
+      else if (state) { state[key] = n; }
+      renderSettings();
+      toast('ok', '已保存', label + ' = ' + n);
+    }).catch(function (err) {
+      fail(err, '保存失败');
+    }).then(function () { busy(btn, false); });
+  }
+  $('btnSaveMax').addEventListener('click', function () { saveNumber(this, 'max_consec', $('inMax'), 0, 20, '连续回复上限'); });
+
+  /* ---- 自动回复前缀 / 后缀（不 trim，失败保留草稿） ---- */
+  var affix = { touched: false, saving: false, base: { prefix: '', suffix: '' } };
+  function affixFromServer() {
+    return {
+      prefix: (state && state.reply_prefix !== undefined && state.reply_prefix !== null) ? String(state.reply_prefix) : '',
+      suffix: (state && state.reply_suffix !== undefined && state.reply_suffix !== null) ? String(state.reply_suffix) : ''
+    };
+  }
+  function affixValues() {
+    var p = $('inReplyPrefix'), s = $('inReplySuffix');
+    return {
+      prefix: p ? String(p.value === null || p.value === undefined ? '' : p.value) : '',
+      suffix: s ? String(s.value === null || s.value === undefined ? '' : s.value) : ''
+    };
+  }
+  function affixDirty() {
+    if (!affix.touched) { return false; }
+    var cur = affixValues();
+    return cur.prefix !== affix.base.prefix || cur.suffix !== affix.base.suffix;
+  }
+  function renderAffixes() {
+    var p = $('inReplyPrefix'), s = $('inReplySuffix'), sp = $('affixSample');
+    if (!p || !s) { return; }
+    affix.base = affixFromServer();
+    if (!affix.touched) {
+      if (document.activeElement !== p) { p.value = affix.base.prefix; }
+      if (document.activeElement !== s) { s.value = affix.base.suffix; }
+    }
+    var on = !!state && online && !affix.saving && acctWriteOk();
+    p.disabled = !on; s.disabled = !on;
+    var dirty = affixDirty();
+    $('btnSaveAffixes').disabled = !on || !dirty;
+    $('btnRevertAffixes').disabled = !on || !affix.touched;
+    setText('affixHint', !state ? '尚未加载' : (dirty ? '有未保存的修改' : (affix.touched ? '与服务端一致' : '')));
+    var h = $('affixHint');
+    if (h) { h.className = 'hint' + (dirty ? ' warn' : ''); }
+    if (sp) {
+      var cur = affixValues();
+      sp.textContent = cur.prefix + '这是生成的回复' + cur.suffix;
+    }
+  }
+  function saveAffixes() {
+    if (!state) { toast('err', '尚未连接', '等待与后端建立连接后再保存'); return; }
+    if (!acctGuard('保存自动回复标记')) { return; }
+    var v = affixValues();   /* 绝不 trim：空格与换行原样保存 */
+    if (v.prefix.length > 500 || v.suffix.length > 500) { toast('err', '超出长度', '前缀/后缀每段最多 500 字'); return; }
+    if (!affixDirty()) { toast('info', '没有改动', '当前表单与服务端值一致'); return; }
+    var btn = $('btnSaveAffixes');
+    affix.saving = true;
+    busy(btn, true);
+    api('/api/settings', { method: 'POST', timeout: 15000, body: { reply_prefix: v.prefix, reply_suffix: v.suffix } }).then(function (d) {
+      if (d && d.state) { Object.assign(state, d.state); }
+      else if (state) { state.reply_prefix = v.prefix; state.reply_suffix = v.suffix; }
+      affix.touched = false;
+      renderAffixes();
+      renderSettings();
+      toast('ok', '已保存', '仅自动回复与 AI 草稿会加上；手动发送不加');
+    }).catch(function (err) {
+      /* 保存失败保留草稿，不覆盖用户输入 */
+      fail(err, '保存失败');
+    }).then(function () {
+      affix.saving = false;
+      busy(btn, false);
+      renderAffixes();
+    });
+  }
+  function revertAffixes() {
+    if (!affix.touched) { toast('info', '没有改动', '无需放弃'); return; }
+    affix.touched = false;
+    renderAffixes();
+    toast('info', '已放弃修改', '前缀/后缀恢复为服务端当前值');
+  }
+  ['inReplyPrefix', 'inReplySuffix'].forEach(function (id) {
+    var n = $(id);
+    if (n) { n.addEventListener('input', function () { affix.touched = true; renderAffixes(); }); }
+  });
+  $('btnSaveAffixes').addEventListener('click', saveAffixes);
+  $('btnRevertAffixes').addEventListener('click', revertAffixes);
+  document.addEventListener('click', function (ev) {
+    var b = ev.target.closest('[data-mute]');
+    if (!b || b.disabled) { return; }
+    var m = parseInt(b.getAttribute('data-mute'), 10);
+    var label = m === 0 ? '取消静音' : ('静音 ' + m + ' 分钟');
+    Promise.resolve(true).then(function () {
+      busy(b, true);
+      return api('/api/mute', { method: 'POST', body: { minutes: m } }).then(function (d) {
+        if (d && d.ok === false) { throw new Error(d.error || '静音失败'); }
+        if (state) {
+          var mm = Number(m) || 0;
+          state.muted_left = mm * 60;
+          state.muted_until = mm ? (Date.now() / 1000 + mm * 60) : 0;
+          if (d && d.muted) { state.muted_desc = d.muted; }
+          else { state.muted_desc = mm ? ('静音至 ' + fmtClock(Date.now() / 1000 + mm * 60)) : '未静音'; }
+        }
+        renderSettings(); renderRuntime();
+        toast('ok', '静音已更新', (d && d.muted) ? d.muted : label);
+      }).catch(function (err) { fail(err, '静音失败'); }).then(function () { busy(b, false); });
+    });
+  });
+
+  /* ================= 上下文 ================= */
+  function renderCtx() {
+    var box = $('ctxList'); clear(box);
+    var h = (state && state.history && typeof state.history === 'object') ? state.history : {};
+    var keys = Object.keys(h);
+    setText('ctxMeta', keys.length ? (keys.length + ' 个会话 · 共 ' + keys.reduce(function (a, k) { return a + (Number(h[k]) || 0); }, 0) + ' 条') : '暂无上下文');
+    $('btnCtxClearAll').disabled = !online || !keys.length || !acctWriteOk();
+    if (!keys.length) {
+      box.appendChild(el('div', 'empty', '暂无已保存的对话上下文'));
+      return;
+    }
+    keys.sort(function (a, b) { return Number(h[b]) - Number(h[a]); }).forEach(function (uid) {
+      var row = el('div', 'list-row');
+      var main = el('div', 'list-main');
+      main.appendChild(el('b', null, nameOf(uid)));
+      main.appendChild(el('i', null, uid + ' · ' + h[uid] + ' 条'));
+      row.appendChild(main);
+      var acts = el('div', 'list-acts');
+      var b = el('button', 'btn sm danger', '清空');
+      b.type = 'button';
+      b.setAttribute('data-ctx-clear', uid);
+      b.disabled = !acctWriteOk();
+      acts.appendChild(b);
+      row.appendChild(acts);
+      box.appendChild(row);
+    });
+  }
+  function clearCtx(uid) {
+    if (!acctGuard('清空上下文')) { return; }
+    var nm = uid ? nameOf(uid) : '全部会话';
+    confirmBox({
+      title: uid ? '清空该会话上下文' : '清空全部上下文',
+      message: uid ? ('确认清空「' + nm + '」保存的对话上下文？此操作不可撤销。') : '确认清空所有联系人保存的对话上下文？此操作不可撤销。',
+      detail: uid || undefined,
+      okText: '清空', danger: true
+    }).then(function (yes) {
+      if (!yes) { return; }
+      var btn = uid ? document.querySelector('[data-ctx-clear="' + uid.replace(/"/g, '') + '"]') : $('btnCtxClearAll');
+      busy(btn, true);
+      api('/api/history_clear', { method: 'POST', body: { uid: uid || '' } }).then(function () {
+        if (state && state.history) {
+          if (uid) { delete state.history[uid]; } else { state.history = {}; }
+        }
+        renderCtx();
+        toast('ok', '已清空', nm);
+      }).catch(function (err) { fail(err, '清空失败'); }).then(function () { busy(btn, false); });
+    });
+  }
+  $('ctxList').addEventListener('click', function (ev) {
+    var b = ev.target.closest('[data-ctx-clear]');
+    if (b) { clearCtx(b.getAttribute('data-ctx-clear')); }
+  });
+  $('btnCtxClearAll').addEventListener('click', function () { clearCtx(''); });
+
+  /* ================= 手动发送（折叠 + 二次确认，绝不自动发送） ================= */
+  var MANUAL_TARGET = '__manual__';
+  var sendSelSig = '';
+  function sendSelHas(sel, val) {
+    var opts = sel.options || [];
+    for (var i = 0; i < opts.length; i++) { if (opts[i].value === val) { return true; } }
+    return false;
+  }
+  function sendContactGroups() {
+    var cs = clientContacts();
+    var people = [], groups = [];
+    Object.keys(cs).forEach(function (uid) {
+      var nm = nameOf(uid);
+      if (String(uid).endsWith('@chatroom')) { groups.push([uid, nm]); }
+      else { people.push([uid, nm]); }
+    });
+    function byName(a, b) { return String(a[1]).localeCompare(String(b[1]), 'zh'); }
+    people.sort(byName); groups.sort(byName);
+    return { people: people, groups: groups };
+  }
+  function syncSendContact() {
+    var sel = $('sendContact');
+    if (!sel) { return; }
+    var l = sendContactGroups();
+    var sig = JSON.stringify([l.people, l.groups]);
+    var cur = String(sel.value || '');
+    if (sig === sendSelSig) { return; }   /* 选项没变化：绝不动当前选择 */
+    sendSelSig = sig;
+    clear(sel);
+    var o0 = el('option', null, '（选择联系人 / 群：只填入下方字段，不会发送）');
+    o0.value = '';
+    sel.appendChild(o0);
+    var fh = el('option', null, '文件传输助手（filehelper）');
+    fh.value = 'filehelper';
+    sel.appendChild(fh);
+    if (l.people.length) {
+      var g1 = document.createElement('optgroup');
+      g1.label = '联系人';
+      l.people.forEach(function (p) {
+        var o = el('option', null, p[1] + ' · ' + p[0]);
+        o.value = p[0];
+        g1.appendChild(o);
+      });
+      sel.appendChild(g1);
+    }
+    if (l.groups.length) {
+      var g2 = document.createElement('optgroup');
+      g2.label = '群聊';
+      l.groups.forEach(function (p) {
+        var o = el('option', null, p[1] + ' · ' + p[0]);
+        o.value = p[0];
+        g2.appendChild(o);
+      });
+      sel.appendChild(g2);
+    }
+    var man = el('option', null, '手动输入 ID（自己在下面的「目标」里填）');
+    man.value = MANUAL_TARGET;
+    sel.appendChild(man);
+    sel.value = (cur && sendSelHas(sel, cur)) ? cur : '';
+  }
+  $('sendContact').addEventListener('change', function (ev) {
+    var v = String(ev.target.value || '');
+    if (!v) { return; }   /* 占位项：不改动任何输入 */
+    if (v === MANUAL_TARGET) {
+      $('manualTargetDetails').open = true;
+      $('sendTarget').focus();
+      toast('info', '手动输入 ID', '请在下方的「目标」里填写 wxid / 群号 / filehelper');
+      return;
+    }
+    var nm, isGroup;
+    if (v === 'filehelper') {
+      nm = '文件传输助手';
+      isGroup = false;
+    } else {
+      nm = clientContacts()[v] || v;
+      isGroup = String(v).endsWith('@chatroom');
+    }
+    $('sendTarget').value = v;
+    $('sendName').value = nm;
+    $('sendGroup').value = isGroup ? 'yes' : 'no';
+    sendArmed = null;
+    $('sendConfirmWrap').hidden = true;
+    toast('info', '已填入目标', nm + ' · ' + v + '（还需点「准备发送…」并二次确认，不会自动发送）');
+  });
+  $('btnSendFill').addEventListener('click', function () {
+    $('sendTarget').value = 'filehelper';
+    $('sendName').value = '文件传输助手';
+    $('sendGroup').value = 'no';
+    var sc = $('sendContact');
+    if (sc && sendSelHas(sc, 'filehelper')) { sc.value = 'filehelper'; }
+    sendArmed = null;
+    $('sendConfirmWrap').hidden = true;
+    toast('info', '已填入文件传输助手', '建议先发给自己验证通道');
+  });
+  $('btnSend').addEventListener('click', function () {
+    var target = ($('sendTarget').value || '').trim();
+    var nm = ($('sendName').value || '').trim();
+    var text = $('sendText').value || '';
+    var isGroup = $('sendGroup').value === 'yes' || /@chatroom\s*$/i.test(target);
+    if (!target) { toast('err', '缺少目标', '请填写 wxid / 群号，或点击「填入文件传输助手」'); return; }
+    if (!text.trim()) { toast('err', '内容为空', '请输入要发送的文本'); return; }
+    if (!acctSendOk()) { toast('err', '发送已暂停', '当前微信账号未确认或收发通道未就绪，后端会拒绝发送。'); return; }
+    if (state && state.send_enabled === false) {
+      toast('err', '发送已禁用', 'send_enabled = false，后端会拒绝发送；请先在「发送通道」开启');
+      return;
+    }
+    sendArmed = { target: target, name: nm, text: text, is_group: isGroup };
+    $('sendConfirmWrap').hidden = false;
+    setText('sendConfirmText', '将要发送给 ' + (nm || target) + (isGroup ? '（群聊）' : '（私聊）') + ' · 不会自动执行，需要你点击「确认发送」');
+    $('sendPreview').textContent = text;
+    $('btnSendConfirm').focus();
+  });
+  $('btnSendCancel').addEventListener('click', function () {
+    sendArmed = null;
+    $('sendConfirmWrap').hidden = true;
+    toast('info', '已取消', '没有发送任何内容');
+  });
+  $('btnSendConfirm').addEventListener('click', function () {
+    if (!sendArmed) { toast('err', '没有待确认的发送'); return; }
+    if (!acctSendOk()) { toast('err', '发送已暂停', '当前微信账号未确认或收发通道未就绪。'); return; }
+    if (state && state.send_enabled === false) {
+      toast('err', '发送已禁用', 'send_enabled = false');
+      return;
+    }
+    var payload = sendArmed;
+    var btn = $('btnSendConfirm');
+    busy(btn, true);
+    api('/api/send', { method: 'POST', body: payload }).then(function (d) {
+      if (d && d.ok === false) { throw new Error(d.error || '发送失败'); }
+      toast('ok', '已发送', '通道：' + ((d && d.used) || 'unknown'));
+      $('sendText').value = '';
+      $('sendConfirmWrap').hidden = true;
+      sendArmed = null;
+      window.setTimeout(function () { if (activePage === 'logs') { loadLogs({ reset: false }); } }, 600);
+    }).catch(function (err) {
+      fail(err, '发送失败');
+    }).then(function () { busy(btn, false); });
+  });
+
+  /* ================= AI 会话 ================= */
+  var AI_TABS = ['global', 'profile', 'history', 'debug'];
+  var ai = {
+    loaded: false, loading: false, settings: null, profiles: {}, tab: 'global',
+    globalBase: null, globalTouched: false,
+    prof: { uid: '', base: null, touched: false },
+    hist: { uid: '', items: [], total: null, hasMore: false, nextBefore: null, loading: false, error: null },
+    imp: { ticket: null, preview: null, targetUid: '', busy: false },
+    gen: { images: [], busy: false, reply: '', insights: [], ctxUsed: null, elapsed: null, error: null },
+    drill: { uid: '', name: '' },
+    ctx: { uid: '', data: null, loading: false, error: null }
+  };
+
+  function aiNum(v) {
+    if (v === null || v === undefined || v === '') { return null; }
+    var n = Number(v);
+    return isFinite(n) ? n : null;
+  }
+  function aiSw(key) { return document.querySelector('.sw[data-aisw="' + key + '"]'); }
+  function aiSwOn(key) { var b = aiSw(key); return b ? b.getAttribute('aria-checked') === 'true' : false; }
+  function aiSetSw(key, on) { var b = aiSw(key); if (b) { b.setAttribute('aria-checked', on ? 'true' : 'false'); } }
+  function aiBaseFromSettings(s) {
+    return {
+      default_prompt: String(s && s.default_prompt !== null && s.default_prompt !== undefined ? s.default_prompt : ''),
+      context_enabled: !!(s && s.context_enabled),
+      context_messages: aiNum(s ? s.context_messages : null),
+      context_char_limit: aiNum(s ? s.context_char_limit : null),
+      image_enabled: !!(s && s.image_enabled),
+      link_enabled: !!(s && s.link_enabled)
+    };
+  }
+  function aiUidOf(selId, inputId) {
+    var i = $(inputId);
+    var v = i ? String(i.value || '').trim() : '';
+    if (v) { return v; }
+    var s = $(selId);
+    return s ? String(s.value || '').trim() : '';
+  }
+  function aiRoleZh(role) { return String(role) === 'assistant' ? '我方' : '对方'; }
+  function aiInsKind(k) { return ({ image: '图片', link: '链接', text: '文本', file: '文件' })[k] || ''; }
+  function aiInsStatus(st) { return ({ ready: '已识别', failed: '失败', unsupported: '不支持' })[st] || ''; }
+
+  /* ---- 全局配置：读取 / 差异 / 填充 ---- */
+  function aiGlobalValues() {
+    var mRaw = ($('aiGlobalCtxMessages').value || '').trim();
+    var cRaw = ($('aiGlobalCtxCharLimit').value || '').trim();
+    return {
+      default_prompt: $('aiGlobalPrompt').value || '',
+      context_enabled: aiSwOn('context_enabled'),
+      context_messages: $('aiGlobalCtxMsgMode').value === 'all' ? -1 : (mRaw === '' ? null : aiNum(mRaw)),
+      context_char_limit: cRaw === '' ? null : aiNum(cRaw),
+      image_enabled: aiSwOn('image_enabled'),
+      link_enabled: aiSwOn('link_enabled')
+    };
+  }
+  function aiGlobalDiff() {
+    if (!ai.loaded || !ai.globalBase) { return null; }
+    var cur = aiGlobalValues(), base = ai.globalBase, out = {};
+    var keys = ['default_prompt', 'context_enabled', 'context_messages', 'context_char_limit', 'image_enabled', 'link_enabled'];
+    keys.forEach(function (k) {
+      if (k === 'default_prompt') {
+        if (String(cur[k] || '') !== String(base[k] || '')) { out[k] = cur[k]; }
+        return;
+      }
+      if (k === 'context_messages' || k === 'context_char_limit') {
+        if (cur[k] !== null && aiNum(cur[k]) !== aiNum(base[k])) { out[k] = aiNum(cur[k]); }
+        return;
+      }
+      if (!!cur[k] !== !!base[k]) { out[k] = !!cur[k]; }
+    });
+    return Object.keys(out).length ? out : null;
+  }
+  function aiGlobalDirtyNow() { return !!(ai.globalTouched && aiGlobalDiff()); }
+  function aiFillGlobal() {
+    if (!ai.loaded || !ai.globalBase) { return; }
+    var b = ai.globalBase;
+    $('aiGlobalPrompt').value = b.default_prompt;
+    aiSetSw('context_enabled', b.context_enabled);
+    aiSetSw('image_enabled', b.image_enabled);
+    aiSetSw('link_enabled', b.link_enabled);
+    $('aiGlobalCtxMsgMode').value = b.context_messages === -1 ? 'all' : 'recent';
+    $('aiGlobalCtxMessages').value = b.context_messages === -1 ? '100' : (b.context_messages === null ? '' : String(b.context_messages));
+    $('aiGlobalCtxCharLimit').value = b.context_char_limit === null ? '' : String(b.context_char_limit);
+    aiSyncGlobalContextInputs();
+    ai.globalTouched = false;
+    setText('aiGlobalNote', '全局人设始终携带。全部模式仅限本会话已保存的历史（当前最多5000条），桥接不按条数或字符截断，仍受模型窗口、速度与用量限制。');
+    aiUpdateDirtyUI();
+  }
+
+  /* ---- 联系人专属配置 ---- */
+  function aiProfileValues() {
+    var mode = $('aiProfileCtxMode').value || 'inherit';
+    var msgMode = $('aiProfileCtxMsgMode').value || 'inherit';
+    var cm = null;
+    if (msgMode === 'custom') {
+      var r = ($('aiProfileCtxMessages').value || '').trim();
+      cm = r === '' ? null : aiNum(r);
+    }
+    return {
+      prompt: $('aiProfilePrompt').value || '',
+      notes: $('aiProfileNotes').value || '',
+      context_enabled: mode === 'on' ? true : (mode === 'off' ? false : null),
+      context_messages: msgMode === 'all' ? -1 : (msgMode === 'custom' ? cm : null)
+    };
+  }
+  function aiProfileBaseFor(uid) {
+    var p = (uid && ai.profiles[uid] && typeof ai.profiles[uid] === 'object') ? ai.profiles[uid] : null;
+    if (!p) { return { prompt: '', notes: '', context_messages: null, context_enabled: null }; }
+    return {
+      prompt: String(p.prompt === null || p.prompt === undefined ? '' : p.prompt),
+      notes: String(p.notes === null || p.notes === undefined ? '' : p.notes),
+      context_messages: (p.context_messages === undefined ? null : aiNum(p.context_messages)),
+      context_enabled: (p.context_enabled === undefined || p.context_enabled === null) ? null : !!p.context_enabled
+    };
+  }
+  function aiProfileDiff() {
+    if (!ai.loaded || !ai.prof.base) { return null; }
+    var cur = aiProfileValues(), base = ai.prof.base, out = {};
+    if (String(cur.prompt) !== String(base.prompt)) { out.prompt = cur.prompt; }
+    if (String(cur.notes) !== String(base.notes)) { out.notes = cur.notes; }
+    var ce = cur.context_enabled, be = base.context_enabled;
+    if (String(ce === null ? 'inherit' : ce) !== String(be === null ? 'inherit' : be)) { out.context_enabled = ce; }
+    var cm = cur.context_messages, bm = base.context_messages;
+    if (String(cm === null ? 'inherit' : cm) !== String(bm === null ? 'inherit' : bm)) { out.context_messages = cm; }
+    return Object.keys(out).length ? out : null;
+  }
+  function aiProfileDirtyNow() { return !!(ai.prof.touched && aiProfileDiff()); }
+  function aiSyncGlobalContextInputs() {
+    var all = $('aiGlobalCtxMsgMode').value === 'all';
+    $('aiGlobalCtxMessages').disabled = all || !ai.loaded;
+    $('aiGlobalCtxCharLimit').disabled = all || !ai.loaded;
+  }
+  function aiContextCountLabel(n) {
+    return n === -1 ? '全部已保存历史' : ((n === null || n === undefined) ? '继承/未设置' : n + ' 条');
+  }
+  function aiSyncProfileMsgInput() {
+    var custom = ($('aiProfileCtxMsgMode').value || 'inherit') === 'custom';
+    var n = $('aiProfileCtxMessages');
+    if (n) { n.disabled = !ai.loaded || !custom; }
+  }
+  function aiFillProfileForm(base) {
+    $('aiProfilePrompt').value = String(base && base.prompt !== null && base.prompt !== undefined ? base.prompt : '');
+    $('aiProfileNotes').value = String(base && base.notes !== null && base.notes !== undefined ? base.notes : '');
+    var ce = base ? base.context_enabled : null;
+    $('aiProfileCtxMode').value = ce === true ? 'on' : (ce === false ? 'off' : 'inherit');
+    var cm = base ? base.context_messages : null;
+    if (cm === null || cm === undefined) {
+      $('aiProfileCtxMsgMode').value = 'inherit';
+      $('aiProfileCtxMessages').value = '';
+    } else if (cm === -1) {
+      $('aiProfileCtxMsgMode').value = 'all';
+      $('aiProfileCtxMessages').value = '';
+    } else {
+      $('aiProfileCtxMsgMode').value = 'custom';
+      $('aiProfileCtxMessages').value = String(cm);
+    }
+    aiSyncProfileMsgInput();
+  }
+  function aiFillProfileFromServer(uid, keepEdits) {
+    uid = String(uid || '').trim();
+    var sameUid = (uid === ai.prof.uid);
+    ai.prof.uid = uid;
+    ai.prof.base = aiProfileBaseFor(uid);
+    var keep = !!(keepEdits && sameUid && ai.prof.touched && aiProfileDiff());
+    if (!keep) {
+      aiFillProfileForm(ai.prof.base);
+      ai.prof.touched = false;
+    }
+    var has = !!(uid && ai.profiles[uid]);
+    if (!uid) {
+      setText('aiProfileMeta', '未选择联系人：从下拉选择，或手动输入 UID 后点击「载入该联系人」。');
+    } else if (has) {
+      setText('aiProfileMeta', '已配置 · ' + (nameOf(uid) || uid) + ' · ' + uid + '｜专属提示词' + (String(ai.prof.base.prompt).trim() ? '已设置' : '为空（继承全局）'));
+    } else {
+      setText('aiProfileMeta', '继承全局 · ' + (nameOf(uid) || uid) + ' · ' + uid + '');
+    }
+    aiUpdateDirtyUI();
+  }
+
+  /* ---- 联系人下拉 ---- */
+  function aiContactUids() {
+    var seen = {}, out = [];
+    var cs = clientContacts();
+    Object.keys(cs).forEach(function (k) { if (k && !seen[k]) { seen[k] = 1; out.push(k); } });
+    Object.keys(ai.profiles || {}).forEach(function (k) { if (k && !seen[k]) { seen[k] = 1; out.push(k); } });
+    out.sort(function (a, b) { return String(nameOf(a)).localeCompare(String(nameOf(b)), 'zh'); });
+    return out;
+  }
+  function aiHasOption(sel, val) {
+    var opts = sel.options || [];
+    for (var i = 0; i < opts.length; i++) { if (opts[i].value === val) { return true; } }
+    return false;
+  }
+  function aiBuildSelect(sel, keep) {
+    if (!sel) { return; }
+    if (keep === undefined) { keep = sel.value; }
+    keep = String(keep || '');
+    var uids = aiContactUids();
+    clear(sel);
+    var o0 = el('option', null, '（选择联系人）');
+    o0.value = '';
+    sel.appendChild(o0);
+    uids.forEach(function (uid) {
+      var o = el('option', null, nameOf(uid) + ' · ' + uid + (ai.profiles[uid] ? ' · 已配置' : ''));
+      o.value = uid;
+      sel.appendChild(o);
+    });
+    if (keep && !aiHasOption(sel, keep)) {
+      var ex = el('option', null, nameOf(keep) + ' · ' + keep + '（手动输入）');
+      ex.value = keep;
+      sel.appendChild(ex);
+    }
+    sel.value = keep;
+  }
+  function aiSyncSelects() {
+    if (!ai.loaded) { return; }
+    var ids = ['aiProfileSelect', 'aiHistSelect', 'aiImportSelect', 'aiGenSelect'];
+    ids.forEach(function (id) {
+      var s = $(id);
+      if (!s || document.activeElement === s) { return; }
+      aiBuildSelect(s, s.value);
+    });
+    var ps = $('aiProfileSelect');
+    if (ps && document.activeElement !== ps && String(ps.value || '') !== ai.prof.uid) { ps.value = ai.prof.uid; }
+  }
+
+  /* ---- 未保存状态与可用性 ---- */
+  function aiSetEnabled() {
+    var on = !!ai.loaded;
+    var w = on && acctWriteOk();   /* 未确认账号：AI 配置/导入/生成一律禁止写 */
+    ['aiGlobalPrompt', 'aiGlobalCtxMsgMode', 'aiGlobalCtxMessages', 'aiGlobalCtxCharLimit', 'aiProfilePrompt', 'aiProfileNotes',
+      'aiProfileUid', 'aiProfileSelect', 'aiProfileCtxMode', 'aiProfileCtxMsgMode'].forEach(function (id) {
+      var n = $(id);
+      if (n) { n.disabled = !on; }
+    });
+    ['context_enabled', 'image_enabled', 'link_enabled'].forEach(function (k) {
+      var b = aiSw(k);
+      if (b) { b.disabled = !on || !acctWriteOk(); }
+    });
+    aiSyncProfileMsgInput();
+    aiSyncGlobalContextInputs();
+    var gd = aiGlobalDirtyNow();
+    var pd = aiProfileDirtyNow();
+    $('aiGlobalSave').disabled = !w || !gd;
+    $('aiGlobalDirtySave').disabled = !w || !gd;
+    $('aiGlobalRevert').disabled = !on || !gd;
+    $('aiGlobalDirtyRevert').disabled = !on || !gd;
+    $('aiProfileLoad').disabled = !w;
+    $('aiProfileReload').disabled = !w || !ai.prof.uid;
+    $('aiProfileSave').disabled = !w || !ai.prof.uid || !pd;
+    $('aiProfileDirtySave').disabled = !w || !ai.prof.uid || !pd;
+    $('aiProfileRevert').disabled = !on || !ai.prof.uid || !pd;
+    $('aiProfileDirtyRevert').disabled = !on || !ai.prof.uid || !pd;
+    var gr = $('aiGenRun'); if (gr) { gr.disabled = !w; }
+    var gp = $('aiGenPick'); if (gp) { gp.disabled = !w || !on; }
+  }
+  function aiUpdateDirtyUI() {
+    var gd = aiGlobalDirtyNow();
+    var gb = $('aiGlobalDirty');
+    if (gb) {
+      gb.hidden = !gd;
+      if (gd) { setText('aiGlobalDirtyText', '全局 AI 配置有未保存的修改（' + Object.keys(aiGlobalDiff() || {}).join('、') + '）· 实时刷新不会覆盖编辑'); }
+    }
+    setText('aiGlobalHint', !ai.loaded ? (ai.loading ? '加载中…' : '尚未加载') : (gd ? '未保存的修改' : '与服务端一致'));
+    var gh = $('aiGlobalHint');
+    if (gh) { gh.className = 'hint' + (gd ? ' warn' : (ai.error ? ' err' : '')); }
+    var pd = aiProfileDirtyNow();
+    var pb = $('aiProfileDirty');
+    if (pb) {
+      pb.hidden = !pd;
+      if (pd) { setText('aiProfileDirtyText', '「' + (nameOf(ai.prof.uid) || ai.prof.uid || '未选择') + '」的专属配置有未保存的修改'); }
+    }
+    setText('aiProfileHint', !ai.prof.uid ? '未选择联系人' : (pd ? '未保存的修改' : '已同步'));
+    var ph = $('aiProfileHint');
+    if (ph) { ph.className = 'hint' + (pd ? ' warn' : ''); }
+    aiRenderProfileSummary();
+    aiSetEnabled();
+  }
+  function setAiLoadHint() {
+    var n = $('aiLoadHint');
+    if (!n) { return; }
+    var cnt = Object.keys(ai.profiles || {}).length;
+    n.textContent = ai.loading ? '加载中…' : (ai.loaded ? ('已加载 · ' + cnt + ' 个联系人专属配置') : (ai.error ? ('加载失败：' + ai.error) : '尚未加载'));
+    n.className = 'hint' + (ai.error ? ' err' : '');
+    var nav = $('navList').querySelector('.nav-item[data-page="ai"] .nav-count');
+    if (nav) { nav.textContent = (ai.loaded && cnt) ? String(cnt) : ''; }
+  }
+
+  /* ---- 加载配置 ---- */
+  function aiLoadSettings(force) {
+    if (ai.loading) { return Promise.resolve(); }
+    if (ai.loaded && !force) { return Promise.resolve(); }
+    ai.loading = true;
+    ai.error = null;
+    setAiLoadHint();
+    setText('aiGlobalHint', '加载中…');
+    return api('/api/assistant/settings', { timeout: 15000 }).then(function (d) {
+      var s = (d && d.settings && typeof d.settings === 'object') ? d.settings : null;
+      if (!s) { throw new Error('返回数据缺少 settings 字段'); }
+      ai.settings = s;
+      ai.profiles = (s.profiles && typeof s.profiles === 'object') ? s.profiles : {};
+      ai.globalBase = aiBaseFromSettings(s);
+      ai.loaded = true;
+      ai.error = null;
+      if (ai.globalTouched) { aiUpdateDirtyUI(); } else { aiFillGlobal(); }
+      aiFillProfileFromServer(ai.prof.uid, true);
+      aiBuildSelect($('aiProfileSelect'), ai.prof.uid);
+      aiSyncSelects();
+    }).catch(function (err) {
+      ai.error = err && err.message ? err.message : '加载失败';
+      aiUpdateDirtyUI();
+      fail(err, 'AI 配置加载失败');
+    }).then(function () {
+      ai.loading = false;
+      setAiLoadHint();
+    });
+  }
+  function aiEnter() {
+    aiShowTab(ai.tab);
+    if (!ai.loaded && !ai.loading) { aiLoadSettings(false); }
+    else { aiSyncSelects(); aiUpdateDirtyUI(); }
+  }
+  function aiShowTab(name) {
+    if (AI_TABS.indexOf(name) < 0) { name = 'global'; }
+    ai.tab = name;
+    AI_TABS.forEach(function (k) {
+      var p = $('aiPane' + k.charAt(0).toUpperCase() + k.slice(1));
+      if (p) { p.hidden = k !== name; }
+    });
+    Array.prototype.forEach.call($('aiTabs').querySelectorAll('button'), function (b) {
+      b.setAttribute('aria-pressed', b.getAttribute('data-ai-tab') === name ? 'true' : 'false');
+    });
+  }
+
+  /* ---- 保存：全局 ---- */
+  function aiSaveGlobal() {
+    if (!ai.loaded) { toast('err', '配置尚未加载', '请先点击「重新加载配置」'); return; }
+    if (!acctGuard('保存全局 AI 配置')) { return; }
+    var mRaw = ($('aiGlobalCtxMessages').value || '').trim();
+    if ($('aiGlobalCtxMsgMode').value !== 'all' && mRaw !== '') {
+      var m = Number(mRaw);
+      if (!Number.isInteger(m) || m < 0 || m > 5000) { toast('err', '条数超出范围', '上下文条数需为 0–5000 的整数'); return; }
+    }
+    var cRaw = ($('aiGlobalCtxCharLimit').value || '').trim();
+    if (cRaw !== '') {
+      var c = parseInt(cRaw, 10);
+      if (isNaN(c) || c < 1000 || c > 50000) { toast('err', '字数超出范围', '上下文字数上限需在 1000–50000 之间'); return; }
+    }
+    var diff = aiGlobalDiff();
+    if (!diff) { toast('info', '没有改动', '当前表单与服务端一致'); return; }
+    var btn = $('aiGlobalSave');
+    busy(btn, true); busy($('aiGlobalDirtySave'), true);
+    api('/api/assistant/settings', { method: 'POST', timeout: 20000, body: diff }).then(function (d) {
+      var s = (d && d.settings && typeof d.settings === 'object') ? d.settings : null;
+      if (s) {
+        ai.settings = s;
+        ai.profiles = (s.profiles && typeof s.profiles === 'object') ? s.profiles : ai.profiles;
+        ai.globalBase = aiBaseFromSettings(s);
+      } else {
+        ai.globalBase = aiBaseFromSettings(aiGlobalValues());
+      }
+      aiFillGlobal();
+      aiSyncSelects();
+      toast('ok', '全局配置已保存', '字段：' + Object.keys(diff).join('、'));
+    }).catch(function (err) {
+      fail(err, '保存失败');
+    }).then(function () {
+      busy(btn, false); busy($('aiGlobalDirtySave'), false);
+      aiUpdateDirtyUI();
+    });
+  }
+  function aiRevertGlobal() {
+    if (!ai.loaded) { return; }
+    if (!aiGlobalDirtyNow()) { toast('info', '没有改动', '无需放弃'); return; }
+    aiFillGlobal();
+    toast('info', '已放弃修改', '全局 AI 配置恢复为服务端当前值');
+  }
+
+  /* ---- 保存：联系人专属 ---- */
+  function aiLoadProfileByUid(uid, force) {
+    uid = String(uid || '').trim();
+    if (!force && uid === ai.prof.uid) { return Promise.resolve(true); }
+    var doFill = function () {
+      aiFillProfileFromServer(uid, false);
+      aiBuildSelect($('aiProfileSelect'), uid);
+      aiUpdateDirtyUI();
+    };
+    if (ai.loaded && ai.prof.touched && aiProfileDiff()) {
+      var prev = ai.prof.uid;
+      return confirmBox({
+        title: force ? '重新载入该联系人配置' : '切换联系人',
+        message: force
+          ? ('「' + (nameOf(prev) || prev || '未选择') + '」的专属配置有未保存的修改，重新载入会丢弃这些修改。')
+          : ('「' + (nameOf(prev) || prev || '未选择') + '」的专属配置有未保存的修改，切换到「' + (nameOf(uid) || uid || '未选择') + '」会丢弃这些修改。'),
+        okText: force ? '丢弃并重载' : '放弃并切换', danger: true
+      }).then(function (yes) {
+        if (!yes) { aiBuildSelect($('aiProfileSelect'), prev); $('aiProfileUid').value = prev; return false; }
+        doFill();
+        return true;
+      });
+    }
+    doFill();
+    return Promise.resolve(true);
+  }
+  function aiSaveProfile() {
+    if (!ai.loaded) { toast('err', '配置尚未加载', '请先点击「重新加载配置」'); return; }
+    if (!acctGuard('保存联系人专属配置')) { return; }
+    if (!ai.prof.uid) { toast('err', '缺少联系人', '请先选择联系人或手动输入 UID'); return; }
+    var v = aiProfileValues();
+    if (v.context_messages !== null && (!Number.isInteger(v.context_messages) || v.context_messages < -1 || v.context_messages > 5000)) {
+      toast('err', '条数超出范围', '请选择全部，或填写 0–5000 的整数'); return;
+    }
+    if (!aiProfileDiff()) { toast('info', '没有改动', '该联系人的配置与服务端一致'); return; }
+    var uid = ai.prof.uid;
+    var btn = $('aiProfileSave');
+    busy(btn, true); busy($('aiProfileDirtySave'), true);
+    api('/api/assistant/profile', {
+      method: 'POST', timeout: 20000,
+      body: { uid: uid, prompt: v.prompt, notes: v.notes, context_messages: v.context_messages, context_enabled: v.context_enabled }
+    }).then(function (d) {
+      if (d && d.settings && typeof d.settings === 'object') {
+        ai.settings = d.settings;
+        if (d.settings.profiles && typeof d.settings.profiles === 'object') { ai.profiles = d.settings.profiles; }
+      }
+      if (d && d.profile && typeof d.profile === 'object') { ai.profiles[uid] = d.profile; }
+      aiFillProfileFromServer(uid, false);
+      aiSyncSelects();
+      toast('ok', '已保存专属配置', (nameOf(uid) || uid) + ' 已更新（未改动白名单与自动回复开关）');
+    }).catch(function (err) {
+      fail(err, '保存失败');
+    }).then(function () {
+      busy(btn, false); busy($('aiProfileDirtySave'), false);
+      aiUpdateDirtyUI();
+    });
+  }
+  function aiRevertProfile() {
+    if (!ai.loaded || !ai.prof.uid) { toast('info', '未选择联系人', '请先载入一个联系人'); return; }
+    if (!aiProfileDirtyNow()) { toast('info', '没有改动', '无需放弃'); return; }
+    aiFillProfileForm(ai.prof.base);
+    ai.prof.touched = false;
+    aiUpdateDirtyUI();
+    toast('info', '已放弃修改', (nameOf(ai.prof.uid) || ai.prof.uid) + ' 的专属配置恢复为服务端当前值');
+  }
+
+  /* ---- 聊天记录 ---- */
+  function aiLoadHistory(opts) {
+    opts = opts || {};
+    var uid = opts.uid !== undefined ? String(opts.uid || '').trim() : (opts.more ? ai.hist.uid : aiUidOf('aiHistSelect', 'aiHistUid'));
+    if (!uid) { toast('err', '缺少联系人', '请选择或输入要读取的 UID'); return Promise.resolve(); }
+    if (ai.hist.loading && uid === ai.hist.uid) { return Promise.resolve(); }
+    var generation = ai.hist.generation = (ai.hist.generation || 0) + 1;
+    if (uid !== ai.hist.uid) { ai.hist.items = []; ai.hist.total = 0; ai.hist.hasMore = false; }
+    var before = null;
+    if (opts.more) {
+      if (!ai.hist.hasMore) { return Promise.resolve(); }
+      before = ai.hist.nextBefore;
+    }
+    ai.hist.uid = uid;
+    ai.hist.loading = true;
+    var btn = $(opts.more ? 'aiHistMore' : 'aiHistLoad');
+    busy(btn, true);
+    setText('aiHistHint', '读取中…');
+    var qs = '/api/history?uid=' + encodeURIComponent(uid) + '&limit=50' + (before === null || before === undefined ? '' : ('&before=' + encodeURIComponent(before)));
+    return api(qs, { timeout: 20000 }).then(function (d) {
+      if (generation !== ai.hist.generation) { return; }
+      var items = (d && Array.isArray(d.items)) ? d.items : [];
+      ai.hist.error = null;
+      if (d && typeof d.total === 'number') { ai.hist.total = d.total; }
+      ai.hist.hasMore = !!(d && d.has_more);
+      ai.hist.nextBefore = (d && d.next_before !== undefined) ? d.next_before : null;
+      if (!ai.hist.hasMore) { ai.hist.nextBefore = null; }
+      if (opts.more) { ai.hist.items = items.concat(ai.hist.items); } else { ai.hist.items = items.slice(); }
+      aiRenderHistory();
+    }).catch(function (err) {
+      if (generation !== ai.hist.generation) { return; }
+      ai.hist.error = err && err.message ? err.message : '读取失败';
+      if (!opts.more) { ai.hist.items = []; }
+      aiRenderHistory();
+      fail(err, '聊天记录读取失败');
+    }).then(function () {
+      if (generation !== ai.hist.generation) { return; }
+      ai.hist.loading = false;
+      busy(btn, false);
+      aiRenderHistory();
+    });
+  }
+  function aiMsgRow(it) {
+    var row = el('div', 'msg-row');
+    var role = String((it && it.role) || 'user');
+    row.setAttribute('data-role', role);
+    row.appendChild(el('span', 'msg-t mono', fmtClock(it && it.t)));
+    row.appendChild(el('span', 'chip ' + (role === 'assistant' ? 'k-reply' : 'k-received'), aiRoleZh(role)));
+    row.appendChild(el('span', 'msg-text', (it && it.text) || '(空)'));
+    if (it && it.source) {
+      var sources = {incoming:'收到消息',self_sync:'本人同步',manual:'后台手动',ai:'AI回复'};
+      row.appendChild(el('span', 'tag', sources[it.source] || String(it.source)));
+    }
+    return row;
+  }
+  function aiRenderHistory() {
+    var box = $('aiHistList');
+    if (!box) { return; }
+    clear(box);
+    var st = ai.hist;
+    setText('aiHistHint', st.uid ? ((nameOf(st.uid) || st.uid) + ' · ' + st.uid) : '未选择联系人');
+    var meta = st.uid
+      ? ('已加载 ' + st.items.length + ' 条' + (typeof st.total === 'number' ? (' · 该会话共 ' + st.total + ' 条') : '') + (st.hasMore ? ' · 还有更早的记录' : ' · 已到底'))
+      : '选择联系人后点击「读取」（每页最多 50 条）';
+    setText('aiHistMeta', meta);
+    var more = $('aiHistMore');
+    if (more) { more.disabled = !st.hasMore || st.loading; more.hidden = !st.hasMore; }
+    $('aiHistClear').disabled = !st.uid || st.loading || !acctWriteOk();
+    if (st.error) { box.appendChild(el('div', 'empty', '读取失败：' + st.error)); return; }
+    if (!st.uid) { box.appendChild(el('div', 'empty', '尚未选择联系人')); return; }
+    if (!st.items.length) { box.appendChild(el('div', 'empty', st.loading ? '读取中…' : '该联系人暂无已保存的聊天记录')); return; }
+    st.items.forEach(function (it) { box.appendChild(aiMsgRow(it)); });
+  }
+  function aiClearHistory() {
+    if (!acctGuard('清空聊天记录')) { return; }
+    var uid = aiUidOf('aiHistSelect', 'aiHistUid');
+    if (!uid) { toast('err', '缺少联系人', '请先选择或输入要清空的 UID'); return; }
+    confirmBox({
+      title: '清空聊天记录',
+      message: '确认清空「' + (nameOf(uid) || uid) + '」保存的全部对话记录？此操作不可撤销，可能导致下一次回复失去上下文。',
+      detail: uid, okText: '清空', danger: true
+    }).then(function (yes) {
+      if (!yes) { return; }
+      var btn = $('aiHistClear');
+      busy(btn, true);
+      api('/api/history_clear', { method: 'POST', timeout: 20000, body: { uid: uid } }).then(function () {
+        if (state && state.history && state.history[uid] !== undefined) { delete state.history[uid]; }
+        ai.hist.items = []; ai.hist.total = 0; ai.hist.hasMore = false; ai.hist.nextBefore = null;
+        if (ai.hist.uid === uid) { aiRenderHistory(); }
+        renderCtx();
+        toast('ok', '已清空', (nameOf(uid) || uid) + ' 的聊天记录');
+      }).catch(function (err) {
+        fail(err, '清空失败');
+      }).then(function () { busy(btn, false); });
+    });
+  }
+
+  /* ---- 导入：预览 → 确认 ---- */
+  function aiImportReset() {
+    ai.imp.ticket = null;
+    ai.imp.preview = null;
+    ai.imp.targetUid = '';
+    var box = $('aiImportPreviewBox');
+    if (box) { box.hidden = true; }
+    ['aiImportSummary', 'aiImportWarnings', 'aiImportMsgs'].forEach(function (id) {
+      var n = $(id);
+      if (n) { clear(n); }
+    });
+    var conf = $('aiImportConfirm');
+    if (conf) { conf.disabled = true; }
+    var canc = $('aiImportCancel');
+    if (canc) { canc.disabled = true; }
+    setText('aiImportPreviewTitle', '');
+  }
+  function aiImportInvalidate(reason) {
+    if (ai.imp.ticket || ai.imp.preview) {
+      aiImportReset();
+      setText('aiImportHint', reason || '内容已变化 · 请重新预览');
+    } else if (reason) {
+      setText('aiImportHint', reason);
+    }
+  }
+  function aiRenderImportPreview() {
+    var pv = ai.imp.preview || {};
+    var uid = ai.imp.targetUid || '';
+    var msgs = Array.isArray(pv.messages) ? pv.messages : [];
+    var cUser = 0, cAsst = 0;
+    msgs.forEach(function (m) { if (String(m && m.role) === 'assistant') { cAsst++; } else { cUser++; } });
+    setText('aiImportPreviewTitle', '预览结果（尚未写入）：待导入 ' + (pv.added === null || pv.added === undefined ? '—' : pv.added) + ' 条' + (ai.imp.ticket ? (' · ticket ' + String(ai.imp.ticket).slice(0, 12)) : ''));
+    var sum = $('aiImportSummary');
+    clear(sum);
+    function add(k, v) {
+      sum.appendChild(el('dt', null, k));
+      sum.appendChild(el('dd', null, (v === undefined || v === null || v === '') ? '—' : String(v)));
+    }
+    add('目标', (nameOf(uid) || uid || '—') + ' · ' + (uid || '—'));
+    add('识别格式', pv.detected_format || '未知');
+    add('解析条数', pv.total === undefined ? null : pv.total);
+    add('新增条数', pv.added === undefined ? null : pv.added);
+    add('重复跳过', pv.duplicates === undefined ? null : pv.duplicates);
+    add('上限裁剪', pv.trimmed === undefined ? null : pv.trimmed);
+    add('预览样本', msgs.length + ' 条（对方 ' + cUser + ' · 回复 ' + cAsst + '）');
+    add('内容指纹', pv.source_hash ? String(pv.source_hash).slice(0, 24) : null);
+    var wbox = $('aiImportWarnings');
+    clear(wbox);
+    var warns = Array.isArray(pv.warnings) ? pv.warnings : [];
+    if (warns.length) {
+      var cb = el('div', 'confirm-box');
+      cb.appendChild(el('div', 'cb-t', '解析提示 ' + warns.length + ' 条'));
+      warns.forEach(function (w) {
+        cb.appendChild(el('div', 'note', '· ' + (typeof w === 'string' ? w : JSON.stringify(w))));
+      });
+      wbox.appendChild(cb);
+    }
+    var box = $('aiImportMsgs');
+    clear(box);
+    msgs.forEach(function (m) { box.appendChild(aiMsgRow(m)); });
+    $('aiImportPreviewBox').hidden = false;
+    $('aiImportConfirm').disabled = !ai.imp.ticket || !acctWriteOk();
+    $('aiImportCancel').disabled = !ai.imp.ticket;
+    setText('aiImportHint', '已预览 · 点「确认导入」才会写入');
+  }
+  function aiImportPreview() {
+    if (ai.imp.busy) { return; }
+    var uid = aiUidOf('aiImportSelect', 'aiImportUid');
+    if (!uid) { toast('err', '缺少目标', '请选择或输入要导入到的 UID'); return; }
+    var content = $('aiImportText').value || '';
+    if (!content.trim()) { toast('err', '内容为空', '请选择本地文件或粘贴聊天文本'); return; }
+    var btn = $('aiImportPreviewBtn');
+    ai.imp.busy = true;
+    busy(btn, true);
+    setText('aiImportHint', '预览中…');
+    var selfName = ($('aiImportSelf').value || '').trim();
+    var fmt = $('aiImportFormat').value || 'auto';
+    api('/api/history/import_preview', {
+      method: 'POST', timeout: 90000,
+      body: { uid: uid, content: content, format: fmt, self_name: selfName }
+    }).then(function (d) {
+      if (!d || d.ticket === undefined || d.ticket === null || d.ticket === '') { throw new Error('返回数据缺少 ticket'); }
+      ai.imp.ticket = String(d.ticket);
+      ai.imp.preview = (d.preview && typeof d.preview === 'object') ? d.preview : {};
+      ai.imp.targetUid = uid;
+      aiRenderImportPreview();
+      toast('info', '已生成预览', '确认后才会写入；共 ' + (ai.imp.preview.added === undefined ? '?' : ai.imp.preview.added) + ' 条可导入');
+    }).catch(function (err) {
+      ai.imp.ticket = null;
+      ai.imp.preview = null;
+      aiImportReset();
+      setText('aiImportHint', '预览失败');
+      fail(err, '预览失败');
+    }).then(function () {
+      ai.imp.busy = false;
+      busy(btn, false);
+      var conf = $('aiImportConfirm');
+      if (conf) { conf.disabled = !ai.imp.ticket || !acctWriteOk(); }
+      var canc = $('aiImportCancel');
+      if (canc) { canc.disabled = !ai.imp.ticket; }
+    });
+  }
+  function aiImportConfirm() {
+    if (ai.imp.busy) { return; }
+    if (!acctGuard('导入聊天记录')) { return; }
+    if (!ai.imp.ticket) { toast('err', '没有可导入的预览', '请先点击「预览（不写入）」'); return; }
+    var btn = $('aiImportConfirm');
+    ai.imp.busy = true;
+    busy(btn, true);
+    var canc = $('aiImportCancel');
+    if (canc) { canc.disabled = true; }
+    var uid = ai.imp.targetUid;
+    api('/api/history/import', { method: 'POST', timeout: 120000, body: { ticket: ai.imp.ticket } }).then(function (d) {
+      var res = d || {};
+      toast('ok', '导入完成', '新增 ' + (res.added || 0) + ' · 重复 ' + (res.duplicates || 0) + ' · 该会话合计 ' + (res.total || 0) + (res.trimmed ? (' · 裁剪 ' + res.trimmed) : ''));
+      aiImportReset();
+      setText('aiImportHint', '导入完成，可重新「读取」查看');
+      if (uid && ai.hist.uid === uid) { aiLoadHistory({ uid: uid }); }
+    }).catch(function (err) {
+      fail(err, '导入失败');
+    }).then(function () {
+      ai.imp.busy = false;
+      busy(btn, false);
+      var conf = $('aiImportConfirm');
+      if (conf) { conf.disabled = !ai.imp.ticket; }
+      var c2 = $('aiImportCancel');
+      if (c2) { c2.disabled = !ai.imp.ticket || ai.imp.busy; }
+    });
+  }
+
+  /* ---- 图片上传（试生成用） ---- */
+  function aiUploadImage(file) {
+    var allowed = ['image/png', 'image/jpeg', 'image/webp'];
+    if (allowed.indexOf(String(file.type || '').toLowerCase()) < 0) {
+      toast('err', '不支持的图片格式', '仅支持 PNG / JPEG / WEBP（不含 SVG / GIF 原生表情）');
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      toast('err', '图片过大', '单张最大 8MB（当前 ' + (file.size / 1048576).toFixed(2) + 'MB）');
+      return;
+    }
+    var btn = $('aiGenPick');
+    var fr = new FileReader();
+    fr.onload = function () {
+      var raw = String(fr.result || '');
+      var comma = raw.indexOf(',');
+      var b64 = comma >= 0 ? raw.slice(comma + 1) : raw;
+      busy(btn, true);
+      api('/api/media/upload', { method: 'POST', timeout: 60000, body: { filename: file.name || 'image', data_base64: b64 } }).then(function (d) {
+        var a = d && d.asset;
+        if (!a || a.id === undefined || a.id === null) { throw new Error('返回数据缺少 asset.id'); }
+        ai.gen.images = [{ id: a.id, name: a.name || file.name || '图片', mime: a.mime || file.type, url: a.url || raw, kind: a.kind || 'image' }];
+        aiRenderGenImages();
+        toast('ok', '图片已上传', '可点击「试生成（不发送）」测试识别');
+      }).catch(function (err) {
+        fail(err, '图片上传失败');
+      }).then(function () {
+        busy(btn, false);
+      });
+    };
+    fr.onerror = function () { toast('err', '读取失败', '无法读取该图片文件'); };
+    fr.readAsDataURL(file);
+  }
+  function aiRenderGenImages() {
+    var box = $('aiGenThumbs');
+    if (!box) { return; }
+    clear(box);
+    ai.gen.images.forEach(function (a) {
+      var d = el('div', 'thumb');
+      /* <img> 不能带请求头：媒体地址一律追加 account_token=<当前作用域 token> */
+      var src = mediaUrl(a.url);
+      var img = el('img');
+      img.alt = a.name || '图片';
+      if (src) { img.src = src; }
+      d.appendChild(img);
+      var x = el('button', 'thumb-x', '×');
+      x.type = 'button';
+      x.setAttribute('data-img-remove', String(a.id));
+      x.setAttribute('aria-label', '移除图片 ' + (a.name || ''));
+      d.appendChild(x);
+      d.appendChild(el('span', 'thumb-n', a.name || String(a.id)));
+      box.appendChild(d);
+    });
+    setText('aiGenImgHint', ai.gen.images.length
+      ? '已选 1 张 · 重新选择将替换原图 · PNG/JPEG/WEBP ≤8MB'
+      : '每次最多 1 张，重新选择将替换原图；PNG/JPEG/WEBP ≤8MB。');
+  }
+
+  /* ---- 试生成（绝不发送） ---- */
+  function aiRenderGen() {
+    var rep = $('aiGenReply');
+    var st = $('aiGenState');
+    if (ai.gen.busy) {
+      st.hidden = false;
+      st.className = 'note';
+      st.textContent = '生成中…通常几秒到几十秒，最长约 3 分钟，请勿重复点击。';
+    } else if (ai.gen.error) {
+      st.hidden = false;
+      st.className = 'note err';
+      st.textContent = '生成失败：' + ai.gen.error + '（不显示任何伪造的识别结果）';
+      rep.hidden = true;
+      rep.textContent = '';
+    } else if (ai.gen.reply) {
+      st.hidden = true;
+      rep.hidden = false;
+      rep.textContent = ai.gen.reply;
+    } else {
+      st.hidden = false;
+      st.className = 'note';
+      st.textContent = '尚未生成。点击「试生成（不发送）」后这里显示草稿。';
+      rep.hidden = true;
+      rep.textContent = '';
+    }
+    $('aiGenCopy').disabled = !ai.gen.reply;
+    var meta = [];
+    if (ai.gen.ctxUsed !== null && ai.gen.ctxUsed !== undefined) { meta.push('上下文 ' + ai.gen.ctxUsed + ' 条'); }
+    if (ai.gen.elapsed !== null && ai.gen.elapsed !== undefined) { meta.push('耗时 ' + (Number(ai.gen.elapsed) / 1000).toFixed(1) + 's'); }
+    setText('aiGenMeta', meta.join(' · '));
+    var ib = $('aiGenInsights');
+    clear(ib);
+    if (!ai.gen.insights.length) { return; }
+    ib.appendChild(el('div', 'ai-sub', '识别情况（后端返回 ' + ai.gen.insights.length + ' 项）'));
+    ai.gen.insights.forEach(function (it) {
+      var ins = el('div', 'insight');
+      var status = String((it && it.status) || '');
+      var dotCls = status === 'ready' ? 'online' : (status === 'failed' ? 'offline' : (status === 'unsupported' ? 'waiting' : 'unknown'));
+      ins.appendChild(el('span', 'dot ' + dotCls));
+      var main = el('div', 'ins-main');
+      var kind = aiInsKind(it && it.kind);
+      main.appendChild(el('b', null, (kind ? kind + ' · ' : '') + String((it && it.title) || '(无标题)')));
+      var line = '状态：' + (aiInsStatus(status) || '未知');
+      if (it && it.summary) { line += ' · ' + it.summary; }
+      main.appendChild(el('span', null, line));
+      if (it && it.error) { main.appendChild(el('span', 'err', '错误：' + it.error)); }
+      ins.appendChild(main);
+      ib.appendChild(ins);
+    });
+  }
+  function aiGenRun() {
+    if (ai.gen.busy) { return; }
+    if (!acctGuard('生成草稿')) { return; }
+    var uid = aiUidOf('aiGenSelect', 'aiGenUid');
+    if (!uid) { toast('err', '缺少联系人', '请选择或输入 UID 后再试生成'); return; }
+    var text = $('aiGenText').value || '';
+    var ids = ai.gen.images.map(function (a) { return a.id; });
+    if (!text.trim() && !ids.length) { toast('err', '没有可测的内容', '请填写对方消息，或先上传一张图片'); return; }
+    var btn = $('aiGenRun');
+    ai.gen.busy = true;
+    busy(btn, true);
+    setText('aiGenHint', '生成中…通常几秒到几十秒，最长约 3 分钟');
+    aiRenderGen();
+    api('/api/assistant/preview', {
+      method: 'POST', timeout: 180000,
+      body: { uid: uid, text: text, image_ids: ids }
+    }).then(function (d) {
+      ai.gen.reply = String((d && d.reply) || '');
+      ai.gen.ctxUsed = d ? d.context_used : null;
+      ai.gen.elapsed = d ? d.elapsed_ms : null;
+      ai.gen.insights = (d && Array.isArray(d.insights)) ? d.insights : [];
+      ai.gen.error = null;
+      aiRenderGen();
+      toast('ok', '已生成草稿', '只生成草稿，未发送任何消息');
+    }).catch(function (err) {
+      ai.gen.error = err && err.message ? err.message : '生成失败';
+      ai.gen.reply = '';
+      ai.gen.insights = [];
+      ai.gen.ctxUsed = null;
+      ai.gen.elapsed = null;
+      aiRenderGen();
+      fail(err, '试生成失败');
+    }).then(function () {
+      ai.gen.busy = false;
+      busy(btn, false);
+      setText('aiGenHint', '');
+      aiRenderGen();
+    });
+  }
+  function aiCopyFallback(t) {
+    var ta = document.createElement('textarea');
+    ta.value = t;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.left = '-1000px';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand('copy');
+      toast('ok', '已复制草稿', '只复制到剪贴板，未发送');
+    } catch (e) {
+      toast('err', '复制失败', '请手动选中草稿文本复制');
+    }
+    document.body.removeChild(ta);
+  }
+  function aiCopyDraft() {
+    var t = ai.gen.reply || '';
+    if (!t) { toast('err', '暂无草稿', '请先生成一次草稿'); return; }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(t).then(function () {
+        toast('ok', '已复制草稿', '只复制到剪贴板，未发送');
+      }).catch(function () { aiCopyFallback(t); });
+      return;
+    }
+    aiCopyFallback(t);
+  }
+
+  /* ---- 联系人专属：生效提示词 / 备注 / 携带条数 概览 ---- */
+  function aiRenderProfileSummary() {
+    var box = $('aiProfileSummary');
+    if (!box) { return; }
+    var uid = ai.prof.uid;
+    if (!uid) {
+      box.textContent = '未选择联系人：选择后会在这里显示其提示词、事实备注与携带条数。';
+      return;
+    }
+    var b = ai.prof.base || {};
+    var g = ai.globalBase || { default_prompt: '', context_messages: null };
+    var own = String(b.prompt === null || b.prompt === undefined ? '' : b.prompt);
+    var notes = String(b.notes === null || b.notes === undefined ? '' : b.notes);
+    var ce = b.context_enabled;
+    var cm = b.context_messages;
+    var gcm = g.context_messages;
+    var eff = (cm === null || cm === undefined) ? gcm : cm;
+    var parts = [];
+    parts.push('提示词：全局始终携带' + (own.trim() ? (' ＋ 专属补充（' + own.length + ' 字）') : '（无专属补充）'));
+    parts.push('备注：' + (notes.trim() ? (notes.length + ' 字') : '空'));
+    parts.push('携带条数：' + ((cm === null || cm === undefined) ? ('继承全局 ' + aiContextCountLabel(gcm)) : aiContextCountLabel(cm)));
+    parts.push('上下文开关：' + (ce === true ? '强制开启' : (ce === false ? '强制关闭' : '继承全局')));
+    parts.push('生效条数：' + aiContextCountLabel(eff));
+    box.textContent = '生效状态 · ' + (nameOf(uid) || uid) + ' · ' + uid + '｜' + parts.join(' · ');
+  }
+
+  /* ---- 从白名单 / 联系人表下钻：按精确 uid 绑定，绝不猜 ---- */
+  function aiRenderDrill() {
+    var wrap = $('aiDrillBackWrap');
+    if (!wrap) { return; }
+    if (!ai.drill.uid) { wrap.hidden = true; return; }
+    wrap.hidden = false;
+    setText('aiDrillNote', '' + (ai.drill.name || nameOf(ai.drill.uid) || ai.drill.uid) + ' · ' + ai.drill.uid + '');
+  }
+  function aiOpenContact(uid, tab) {
+    uid = String(uid || '').trim();
+    if (!uid) { toast('err', '缺少 UID', '无法定位该联系人：请在「联系人表」用精确 ID 点「配置」'); return; }
+    var request = ai.drillRequest = (ai.drillRequest || 0) + 1;
+    showPage('ai');
+    var apply = function () {
+      if (request !== ai.drillRequest) { return; }
+      aiLoadProfileByUid(uid, false).then(function (accepted) {
+      if (!accepted || request !== ai.drillRequest) { return; }
+      ai.drill = { uid: uid, name: nameOf(uid) };
+      ['aiProfileUid', 'aiHistUid', 'aiImportUid', 'aiGenUid'].forEach(function (id) {
+        var n = $(id);
+        if (n) { n.value = uid; }
+      });
+      aiBuildSelect($('aiProfileSelect'), uid);
+      aiBuildSelect($('aiHistSelect'), uid);
+      aiBuildSelect($('aiImportSelect'), uid);
+      aiBuildSelect($('aiGenSelect'), uid);
+      aiShowTab(tab || 'profile');
+      aiRenderDrill();
+      aiLoadHistory({ uid: uid });
+      aiLoadContext(uid);
+      aiUpdateDirtyUI();
+      });
+    };
+    if (ai.loaded) { apply(); return; }
+    aiLoadSettings(false);
+    var tries = 0;
+    var t = window.setInterval(function () {
+      tries++;
+      if (ai.loaded || (!ai.loading && ai.error) || tries > 80) { window.clearInterval(t); apply(); }
+    }, 100);
+  }
+
+  /* ---- 实际携带上下文（/api/assistant/context） ---- */
+  function aiLoadContext(uid) {
+    uid = String(uid || '').trim() || ai.prof.uid || ai.hist.uid;
+    if (!uid) { toast('err', '缺少联系人', '请先选择联系人，或从白名单/联系人表点「配置」'); return Promise.resolve(); }
+    if (ai.ctx.loading && ai.ctx.uid === uid) { return Promise.resolve(); }
+    var generation = ai.ctx.generation = (ai.ctx.generation || 0) + 1;
+    ai.ctx.data = null;
+    ai.ctx.loading = true;
+    ai.ctx.uid = uid;
+    ai.ctx.error = null;
+    var box = $('aiCtxBox');
+    aiRenderContext();
+    return api('/api/assistant/context?uid=' + encodeURIComponent(uid), { timeout: 20000 }).then(function (d) {
+      if (generation !== ai.ctx.generation) { return; }
+      if (!d || d.ok === false) { throw new Error((d && d.error) || '返回数据异常'); }
+      ai.ctx.data = d;
+    }).catch(function (err) {
+      if (generation !== ai.ctx.generation) { return; }
+      ai.ctx.data = null;
+      ai.ctx.error = err && err.message ? err.message : '读取失败';
+      fail(err, '上下文读取失败');
+    }).then(function () {
+      if (generation !== ai.ctx.generation) { return; }
+      ai.ctx.loading = false;
+      aiRenderContext();
+    });
+  }
+  function aiRenderContext() {
+    var sum = $('aiCtxSummary');
+    var pr = $('aiCtxPrompt'), nt = $('aiCtxNotes'), tx = $('aiCtxText');
+    if (!sum) { return; }
+    clear(sum);
+    var d = ai.ctx.data;
+    var uid = ai.ctx.uid || '';
+    if (pr) { pr.textContent = ''; }
+    if (nt) { nt.textContent = ''; }
+    if (tx) { tx.textContent = ''; }
+    if (!d) {
+      setText('aiCtxHint', ai.ctx.loading ? '读取中…' : (ai.ctx.error ? ('读取失败：' + ai.ctx.error) : (uid ? '尚未读取' : '未选择联系人')));
+      sum.appendChild(el('dt', null, '说明'));
+      sum.appendChild(el('dd', null, ai.ctx.error ? ('读取失败：' + ai.ctx.error) : '点「查看生效提示词与上下文」读取该联系人的实际携带内容。'));
+      return;
+    }
+    var uidShown = d.uid || uid;
+    setText('aiCtxHint', '已读取 · ' + ((d.name || nameOf(uidShown) || uidShown) + ' · ' + uidShown));
+    function add(k, v) {
+      sum.appendChild(el('dt', null, k));
+      sum.appendChild(el('dd', null, (v === undefined || v === null || v === '') ? '—' : String(v)));
+    }
+    add('联系人', (d.name || nameOf(uidShown) || '') + ' · ' + uidShown);
+    add('携带上下文', d.context_enabled ? '开启' : '关闭');
+    add('携带条数', aiContextCountLabel(d.context_messages));
+    add('字数上限', d.context_messages === -1 ? '桥接不截断（仍受模型窗口限制）' : ((d.context_char_limit === null || d.context_char_limit === undefined) ? '继承/未设置' : d.context_char_limit));
+    add('实际携带', ((d.context_used === null || d.context_used === undefined) ? '—' : d.context_used) + ' 条');
+    add('已存储', ((d.stored_total === null || d.stored_total === undefined) ? '—' : d.stored_total) + ' 条');
+    add('上下文文本长度', (typeof d.context_text === 'string' ? d.context_text.length : 0) + ' 字');
+    if (pr) { pr.textContent = String(d.prompt || '').trim() ? String(d.prompt) : '（该联系人无专属提示词，且全局默认也为空）'; }
+    if (nt) { nt.textContent = String(d.notes || '').trim() ? String(d.notes) : '（没有为该联系人设置事实备注）'; }
+    if (tx) { tx.textContent = String(d.context_text || '') !== '' ? String(d.context_text) : '（本次不携带上下文文本：可能上下文已关闭、条数为 0，或该联系人还没有聊天记录）'; }
+  }
+  document.addEventListener('click', function (ev) {
+    var a = ev.target.closest('[data-al-config]');
+    if (a) { aiOpenContact(a.getAttribute('data-al-config'), 'profile'); return; }
+    var c = ev.target.closest('[data-ct-config]');
+    if (c) { aiOpenContact(c.getAttribute('data-ct-config'), 'profile'); }
+  });
+
+  /* ---- AI 页事件绑定 ---- */
+  $('aiTabs').addEventListener('click', function (ev) {
+    var b = ev.target.closest('button[data-ai-tab]');
+    if (!b) { return; }
+    aiShowTab(b.getAttribute('data-ai-tab'));
+  });
+  $('aiReload').addEventListener('click', function () {
+    var btn = $('aiReload');
+    busy(btn, true);
+    aiLoadSettings(true).then(function () { busy(btn, false); });
+  });
+  document.addEventListener('click', function (ev) {
+    var sw = ev.target.closest('.sw[data-aisw]');
+    if (!sw || sw.disabled) { return; }
+    sw.setAttribute('aria-checked', sw.getAttribute('aria-checked') === 'true' ? 'false' : 'true');
+    ai.globalTouched = true;
+    aiUpdateDirtyUI();
+  });
+  ['aiGlobalPrompt', 'aiGlobalCtxMessages', 'aiGlobalCtxCharLimit'].forEach(function (id) {
+    $(id).addEventListener('input', function () {
+      ai.globalTouched = true;
+      aiUpdateDirtyUI();
+    });
+  });
+  $('aiGlobalCtxMsgMode').addEventListener('change', function () {
+    ai.globalTouched = true;
+    aiSyncGlobalContextInputs();
+    aiUpdateDirtyUI();
+  });
+  $('aiGlobalSave').addEventListener('click', aiSaveGlobal);
+  $('aiGlobalDirtySave').addEventListener('click', aiSaveGlobal);
+  $('aiGlobalRevert').addEventListener('click', aiRevertGlobal);
+  $('aiGlobalDirtyRevert').addEventListener('click', aiRevertGlobal);
+  ['aiProfilePrompt', 'aiProfileNotes', 'aiProfileCtxMessages'].forEach(function (id) {
+    $(id).addEventListener('input', function () {
+      ai.prof.touched = true;
+      aiUpdateDirtyUI();
+    });
+  });
+  ['aiProfileCtxMode', 'aiProfileCtxMsgMode'].forEach(function (id) {
+    $(id).addEventListener('change', function () {
+      ai.prof.touched = true;
+      aiSyncProfileMsgInput();
+      aiUpdateDirtyUI();
+    });
+  });
+  $('aiProfileSelect').addEventListener('change', function (ev) {
+    var uid = String(ev.target.value || '').trim();
+    if (!ai.loaded) { aiLoadSettings(false); return; }
+    aiLoadProfileByUid(uid, false);
+  });
+  $('aiProfileLoad').addEventListener('click', function () {
+    var manual = ($('aiProfileUid').value || '').trim();
+    var uid = manual || String($('aiProfileSelect').value || '').trim();
+    if (!uid) { toast('err', '缺少 UID', '请选择联系人或手动输入 UID'); return; }
+    if (!ai.loaded) { toast('info', '配置尚未加载', '正在加载，请稍后再试'); aiLoadSettings(false); return; }
+    aiLoadProfileByUid(uid, true);
+    toast('info', '已载入', (nameOf(uid) || uid) + ' 的专属配置');
+  });
+  $('aiProfileSave').addEventListener('click', aiSaveProfile);
+  $('aiProfileDirtySave').addEventListener('click', aiSaveProfile);
+  $('aiProfileRevert').addEventListener('click', aiRevertProfile);
+  $('aiProfileDirtyRevert').addEventListener('click', aiRevertProfile);
+  $('aiProfileReload').addEventListener('click', function () {
+    var uid = ai.prof.uid;
+    if (!uid) { toast('info', '未选择联系人', '请先选择或载入一个联系人'); return; }
+    var run = function () {
+      aiLoadSettings(true).then(function () {
+        ai.prof.touched = false;
+        aiFillProfileFromServer(uid, false);
+        aiBuildSelect($('aiProfileSelect'), uid);
+        aiUpdateDirtyUI();
+      });
+    };
+    if (ai.prof.touched && aiProfileDiff()) {
+      confirmBox({
+        title: '重新载入该联系人配置',
+        message: '将丢弃「' + (nameOf(uid) || uid) + '」未保存的修改，并从服务端重新读取。',
+        okText: '丢弃并重载', danger: true
+      }).then(function (yes) { if (yes) { run(); } });
+      return;
+    }
+    run();
+  });
+  $('aiHistSelect').addEventListener('change', function (ev) {
+    var v = String(ev.target.value || '').trim();
+    $('aiHistUid').value = v;
+    if (v) { aiLoadHistory({ uid: v }); aiLoadContext(v); }
+  });
+  $('aiHistLoad').addEventListener('click', function () {
+    var v = aiUidOf('aiHistSelect', 'aiHistUid');
+    aiLoadHistory({});
+    if (v) { aiLoadContext(v); }
+  });
+  $('aiHistCtxView').addEventListener('click', function () { aiLoadContext(''); });
+  $('aiProfileCtxView').addEventListener('click', function () {
+    var uid = ai.prof.uid;
+    if (!uid) { toast('info', '未选择联系人', '请先选择联系人，或从白名单/联系人表点「配置」'); return; }
+    aiShowTab('history');
+    aiBuildSelect($('aiHistSelect'), uid);
+    $('aiHistUid').value = uid;
+    aiLoadHistory({ uid: uid });
+    aiLoadContext(uid);
+  });
+  $('aiDrillBack').addEventListener('click', function () { showPage('allow'); });
+  $('aiHistMore').addEventListener('click', function () { aiLoadHistory({ more: true }); });
+  $('aiHistClear').addEventListener('click', aiClearHistory);
+  $('aiImportPick').addEventListener('click', function () { $('aiImportFile').click(); });
+  $('aiImportFile').addEventListener('change', function (ev) {
+    var f = ev.target.files && ev.target.files[0];
+    ev.target.value = '';
+    if (!f) { return; }
+    if (f.size > 5 * 1024 * 1024) {
+      toast('err', '文件过大', '最大 5MB（当前 ' + (f.size / 1048576).toFixed(2) + 'MB）');
+      return;
+    }
+    var fr = new FileReader();
+    fr.onload = function () {
+      $('aiImportText').value = String(fr.result || '');
+      aiImportReset();
+      setText('aiImportHint', '已载入 ' + f.name + ' · 请点「预览（不写入）」');
+      toast('ok', '文件已读取', f.name + '（' + Math.round(f.size / 1024) + ' KB）· 仅在你本机浏览器内读取');
+    };
+    fr.onerror = function () { toast('err', '读取失败', '无法读取该文件'); };
+    fr.readAsText(f, 'utf-8');
+  });
+  $('aiImportClearText').addEventListener('click', function () {
+    $('aiImportText').value = '';
+    aiImportReset();
+    setText('aiImportHint', '已清空文本');
+  });
+  ['aiImportText', 'aiImportUid', 'aiImportSelf'].forEach(function (id) {
+    $(id).addEventListener('input', function () { aiImportInvalidate('内容已变化 · 请重新预览'); });
+  });
+  $('aiImportSelect').addEventListener('change', function (ev) {
+    var v = String(ev.target.value || '').trim();
+    $('aiImportUid').value = v;
+    aiImportInvalidate('目标已变化 · 请重新预览');
+  });
+  $('aiImportFormat').addEventListener('change', function () { aiImportInvalidate('格式已变化 · 请重新预览'); });
+  $('aiImportPreviewBtn').addEventListener('click', aiImportPreview);
+  $('aiImportConfirm').addEventListener('click', aiImportConfirm);
+  $('aiImportCancel').addEventListener('click', function () {
+    if (ai.imp.busy) { return; }
+    aiImportReset();
+    setText('aiImportHint', '已取消预览（没有写入任何内容）');
+    toast('info', '已取消预览', '没有写入任何数据');
+  });
+  $('aiGenPick').addEventListener('click', function () { $('aiGenImage').click(); });
+  $('aiGenImage').addEventListener('change', function (ev) {
+    var f = ev.target.files && ev.target.files[0];
+    ev.target.value = '';
+    if (f) { aiUploadImage(f); }
+  });
+  $('aiGenThumbs').addEventListener('click', function (ev) {
+    var b = ev.target.closest('[data-img-remove]');
+    if (!b) { return; }
+    var id = b.getAttribute('data-img-remove');
+    ai.gen.images = ai.gen.images.filter(function (a) { return String(a.id) !== id; });
+    aiRenderGenImages();
+  });
+  $('aiGenSelect').addEventListener('change', function (ev) {
+    $('aiGenUid').value = String(ev.target.value || '');
+  });
+  $('aiGenRun').addEventListener('click', aiGenRun);
+  $('aiGenCopy').addEventListener('click', aiCopyDraft);
+
+  /* AI 页初始渲染：未加载前全部禁用，避免产生「开关已开」的错觉 */
+  aiShowTab('global');
+  aiImportReset();
+  aiRenderHistory();
+  aiRenderGenImages();
+  aiRenderGen();
+  setAiLoadHint();
+  aiUpdateDirtyUI();
+
+  /* ================= 弹窗通用 ================= */
+  $('modalX').addEventListener('click', closeModal);
+  $('modalBd').addEventListener('click', function (ev) { if (ev.target === $('modalBd')) { closeModal(); } });
+  document.addEventListener('keydown', function (ev) {
+    if (ev.key === 'Escape' && !$('modalBd').hidden) { closeModal(); }
+  });
+  $('bannerRetry').addEventListener('click', function () { pollState(true); });
+
+  /* ================= 离线横幅 ================= */
+  function setBanner(show, at) {
+    var b = $('banner');
+    b.hidden = !show;
+    if (show && at) { setText('bannerTime', '最后成功 ' + at); }
+    var h = show ? (b.offsetHeight || 32) : 0;
+    document.documentElement.style.setProperty('--banner-h', h + 'px');
+  }
+  function setOnline(v) {
+    online = v;
+    var dot = $('connDot');
+    dot.className = 'dot ' + (v ? 'online' : 'offline');
+    setText('connText', v ? ('已连接 · ' + fmtClock(Date.now() / 1000)) : (lastOkAt ? '已断开 · 最后 ' + lastOkAt : '无法连接'));
+    setBanner(!v, lastOkAt);
+    renderServices(); renderSettings(); renderRuntime(); renderStats();
+    syncTopPill();
+    renderAccount(); renderAccountBar();
+  }
+
+  /* ================= 轮询 ================= */
+  function applyState(d) {
+    var freshContacts = d && d.contacts && typeof d.contacts === 'object' ? d.contacts : {};
+    if (!ctDirty) {
+      state = d;
+    } else {
+      var st = {};
+      for (var k in d) { if (Object.prototype.hasOwnProperty.call(d, k)) { st[k] = d[k]; } }
+      st.contacts = state && state.contacts ? state.contacts : freshContacts;
+      var latest = freshContacts, kk;
+      var merged = {};
+      for (kk in latest) { if (Object.prototype.hasOwnProperty.call(latest, kk)) { merged[kk] = latest[kk]; } }
+      var cur = clientContacts();
+      for (kk in cur) { if (Object.prototype.hasOwnProperty.call(cur, kk)) { merged[kk] = cur[kk]; } }
+      for (kk in ctDeleted) { if (Object.prototype.hasOwnProperty.call(ctDeleted, kk)) { delete merged[kk]; } }
+      st.contacts = merged;
+      state = st;
+    }
+    if (!alDirty) { alBase = allowlistBase(); alWork = allowlistBase(); }
+    else {
+      var sv = allowlistBase();
+      if (sv.join('\n') !== alBase.join('\n')) { alServerChanged = true; }
+      else { alServerChanged = false; }
+      alBase = sv;
+    }
+    var hasCt = d && d.contacts && typeof d.contacts === 'object';
+    if (hasCt && !ctDirty) { ctBase = d.contacts; }
+  }
+  /* ================= 账号 UI ================= */
+  var ACCT_GATE_IDS = [
+    'dirtySave', 'dirtyRevert', 'alAdd', 'alBulkApply', 'alBulkFill', 'alBulkToggle',
+    'ctAdd', 'aiImportPreviewBtn'
+  ];
+  function renderAccount() {
+    var dot = $('acctDot'), txt = $('acctText'), row = $('acctRow');
+    if (!dot || !txt) { return; }
+    var label, cls;
+    if (!acctKnown()) { label = '账号未识别'; cls = 'unknown'; }
+    else if (!ACCT.verified) { label = '未确认微信账号'; cls = 'waiting'; }
+    else if (!ACCT.ready) { label = '收发待重连'; cls = 'waiting'; }
+    else { label = '已确认'; cls = 'online'; }
+    var who = (ACCT.name || (acctKnown() ? '微信账号' : '账号未识别')) + (ACCT.id ? (' · ' + ACCT.id) : '');
+    txt.textContent = who + ' · ' + label;
+    dot.className = 'dot ' + cls;
+    if (row) {
+      var tip = '当前微信账号：' + (ACCT.name || '未知') + (ACCT.id ? ('（' + ACCT.id + '）') : '') +
+        '\n状态：' + label + (ACCT.status ? ('（' + ACCT.status + '）') : '');
+      if (ACCT.detail) { tip += '\n' + ACCT.detail; }
+      row.title = tip;
+    }
+  }
+  function renderAccountBar() {
+    var bar = $('acctBar');
+    if (!bar) { return; }
+    var msg = '';
+    if (state && state.preview_mode) { msg = '只读预览 · 未连接微信、未读取聊天。接入步骤请查看项目 README。'; }
+    else if (acctKnown() && !ACCT.verified) { msg = '未确认微信账号，操作已暂停'; }
+    bar.hidden = !msg;
+    if (msg) { setText('acctBarText', msg); }
+  }
+  /* 只做「未确认则禁用」，绝不在通过时反向启用（避免覆盖在线/加载态判断） */
+  function applyAccountGates() {
+    var ok = acctWriteOk();
+    if (ok) { return; }
+    ACCT_GATE_IDS.forEach(function (id) { var n = $(id); if (n) { n.disabled = true; } });
+  }
+  function renderAll() {
+    renderServices(); renderStats(); renderRuntime(); renderSettings();
+    renderAllow(); renderContacts(); renderCtx(); renderRecent(); syncTopPill();
+    renderLogsMeta();
+    syncSendContact(); renderAffixes(); aiRenderDrill();
+    if (activePage === 'ai') { aiSyncSelects(); if (ai.loaded) { aiUpdateDirtyUI(); } }
+    renderAccount(); renderAccountBar(); applyAccountGates();
+  }
+  function pollState(manual) {
+    if (inflight.state) { return Promise.resolve(); }
+    inflight.state = true;
+    return api('/api/state').then(function (d) {
+      if (!d || typeof d !== 'object') { throw new Error('返回数据格式异常'); }
+      failures = 0;
+      lastOkAt = fmtClock(Date.now() / 1000);
+      /* 账号作用域：token 变化 → 已触发整页刷新，本次数据一律丢弃 */
+      if (!syncAccount(d)) { return; }
+      applyState(d);
+      setOnline(true);
+      renderAll();
+      if (manual) { toast('ok', '已刷新', '状态数据已更新'); }
+    }).catch(function (err) {
+      failures++;
+      if (err && err.accountChanged) { return; }   /* 账号变化：正在刷新，不显示离线横幅 */
+      if (online || failures === 1) { setOnline(false); }
+      if (manual) { fail(err, '刷新失败'); }
+    }).then(function () { inflight.state = false; });
+  }
+  var recentTick = 0;
+  function tick() {
+    if (document.hidden) { return; }
+    pollState(false);
+    if (activePage === 'logs') {
+      if (!logs.paused) { loadLogs({ reset: false, silent: true }); }
+    } else if (activePage === 'overview') {
+      recentTick++;
+      if (recentTick % 2 === 1 || !recent.items) { loadRecent(); }
+    }
+  }
+  $('refreshBtn').addEventListener('click', function () {
+    var b = this;
+    busy(b, true);
+    var jobs = [pollState(true)];
+    if (activePage === 'logs') { jobs.push(loadLogs({ reset: false, silent: true })); }
+    if (activePage === 'overview') { jobs.push(loadRecent()); }
+    if (activePage === 'ai') { jobs.push(aiLoadSettings(true)); }
+    Promise.all(jobs).then(function () { busy(b, false); });
+  });
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) { pollState(false); }
+  });
+
+  /* ================= 启动 ================= */
+  buildNav();
+  syncScopeSeg();
+  showPage(activePage);
+  syncSendContact();
+  renderAffixes();
+  aiRenderDrill();
+  renderAccount();
+  renderAccountBar();
+  pollState(false);
+  loadLogs({ reset: true, silent: true });
+  if (activePage === 'overview') { loadRecent(); }
+  window.setInterval(tick, POLL_MS);
+})();
+</script>
+</body>
+</html>

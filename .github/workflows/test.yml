@@ -1,0 +1,65 @@
+name: Offline tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: offline-tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: ${{ matrix.os }} / Python ${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python: ['3.10', '3.12']
+    defaults:
+      run:
+        shell: bash
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTHONUTF8: '1'
+      TZ: UTC
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Check Python syntax without importing services
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess
+          files = subprocess.check_output(['git', 'ls-files', '-z', '*.py']).decode().split('\0')
+          for name in filter(None, files):
+              compile(Path(name).read_bytes(), name, 'exec')
+          PY
+      - name: Check shell syntax without starting services
+        run: |
+          while IFS= read -r -d '' script; do
+            bash -n "$script"
+          done < <(git ls-files -z '*.sh' 'wechat-ctl')
+      - name: Run isolated Python tests
+        env:
+          WECHAT_HOME: ${{ runner.temp }}/wechat-offline-tests
+        run: python -m unittest discover -s tests -p 'test_*.py'
+      - name: Run JavaScript VM tests
+        run: node --test tests/*.test.cjs
