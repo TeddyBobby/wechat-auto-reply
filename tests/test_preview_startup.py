@@ -11,6 +11,9 @@ import time
 import unittest
 import urllib.error
 import urllib.request
+from http.server import BaseHTTPRequestHandler
+from unittest.mock import patch
+from _offline import load_bridge
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCES = (
@@ -25,6 +28,10 @@ GUARD = '''import json, os, sys
 from pathlib import Path
 
 if Path(sys.argv[0]).name == 'wechat_hermes_bridge.py':
+    # If bootstrap stalls on a hosted runner, capture its exact Python stack
+    # before start.sh's readiness timeout reclaims this disposable process.
+    import faulthandler
+    faulthandler.dump_traceback_later(8, repeat=False)
     Path(os.environ['PREVIEW_TEST_PYTHON_INFO']).write_text(json.dumps({
         'version': sys.version.split()[0],
         'executable': Path(sys.executable).name,
@@ -55,6 +62,17 @@ sys.addaudithook(guard)
 
 
 class PreviewStartupTests(unittest.TestCase):
+    def test_loopback_server_listens_without_reverse_dns(self):
+        bridge = load_bridge('preview_dns_test_bridge')
+        with patch('socket.getfqdn', side_effect=AssertionError('Loopback server must not query reverse DNS')) as reverse_dns:
+            with bridge.LocalHTTPServer(('127.0.0.1', 0), BaseHTTPRequestHandler) as server:
+                self.assertEqual(server.server_name, 'localhost')
+                self.assertEqual(server.server_port, server.server_address[1])
+                self.assertGreater(server.server_port, 0)
+                with socket.create_connection(server.server_address, timeout=1):
+                    pass
+            reverse_dns.assert_not_called()
+
     def test_fresh_default_start_is_read_only_and_repeated_start_is_safe(self):
         with tempfile.TemporaryDirectory(prefix='wechat-preview-test-') as directory:
             base = Path(directory).resolve()

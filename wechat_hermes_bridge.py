@@ -5,7 +5,7 @@
 发消息: OneBot 按目标 ID 直发；剪贴板仅在显式选择时使用
 管理面板: http://127.0.0.1:8080
 """
-import hashlib, hmac, json, os, re, sqlite3, subprocess, sys, tempfile, time, socket, urllib.request, signal
+import hashlib, hmac, json, os, re, sqlite3, subprocess, sys, tempfile, time, socket, socketserver, urllib.request, signal
 from contextvars import ContextVar
 from pathlib import Path
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
@@ -882,6 +882,14 @@ def port_open(p):
         s.close()
 
 
+class LocalHTTPServer(ThreadingHTTPServer):
+    """Loopback services must not depend on reverse DNS during startup."""
+    def server_bind(self):
+        socketserver.TCPServer.server_bind(self)
+        self.server_name = 'localhost'
+        self.server_port = self.server_address[1]
+
+
 def main(native=None):
     global PREVIEW_MODE, account_manager
     native = os.environ.get('WECHAT_MODE') == 'native' if native is None else native
@@ -894,9 +902,10 @@ def main(native=None):
             def do_POST(self):
                 self.close_connection = True
                 self._j({'ok': False, 'error': '当前为只读预览，不连接微信或模型。安装依赖后使用 ./start.sh --native。'}, 403)
-        print(f'只读预览面板: http://127.0.0.1:{WEB_PORT}', flush=True)
-        print('使用空白数据，不连接微信、不调用 Hermes、不启动消息 Webhook。', flush=True)
-        ThreadingHTTPServer(('127.0.0.1', WEB_PORT), PreviewPanel).serve_forever()
+        with LocalHTTPServer(('127.0.0.1', WEB_PORT), PreviewPanel) as server:
+            print(f'只读预览面板: http://127.0.0.1:{WEB_PORT}', flush=True)
+            print('使用空白数据，不连接微信、不调用 Hermes、不启动消息 Webhook。', flush=True)
+            server.serve_forever()
         return
     if not TOKEN:
         raise SystemExit("请显式设置 WECHAT_ONEBOT_TOKEN，未配置时不启动桥接")
@@ -906,11 +915,11 @@ def main(native=None):
     print(f"   白名单={allow_desc} 自动回复={state['auto_reply']} "
           f"静音={muted_desc()}")
     log("info", f"桥接启动（白名单={allow_desc}，{muted_desc()}）")
-    Thread(target=lambda: ThreadingHTTPServer(("127.0.0.1", WEB_PORT), Panel).serve_forever(), daemon=True).start()
+    Thread(target=lambda: LocalHTTPServer(("127.0.0.1", WEB_PORT), Panel).serve_forever(), daemon=True).start()
     print(f"📊 面板: http://127.0.0.1:{WEB_PORT}")
     print(f"🔗 接收: http://{ONEBOT_LISTEN[0]}:{ONEBOT_LISTEN[1]}/onebot")
     print(f"📝 日志: {LOG_FILE}")
-    ThreadingHTTPServer(ONEBOT_LISTEN, Hook).serve_forever()
+    LocalHTTPServer(ONEBOT_LISTEN, Hook).serve_forever()
 
 
 if __name__ == "__main__":
